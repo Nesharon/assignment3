@@ -1,6 +1,5 @@
 import * as pulumi from "@pulumi/pulumi";
 import * as azure from "@pulumi/azure-native";
-import * as k8s from "@pulumi/kubernetes";
 
 // Create an Azure Resource Group
 const resourceGroup = new azure.resources.ResourceGroup("aks-rg-s5");
@@ -36,13 +35,15 @@ const aksCluster = new azure.containerservice.ManagedCluster("aks-cluster-s5", {
     },
 });
 
-// Retrieve KubeConfig
-const creds = azure.containerservice.listManagedClusterUserCredentials({
+// Retrieve AKS credentials properly
+const creds = pulumi.output(azure.containerservice.listManagedClusterUserCredentials({
     resourceGroupName: resourceGroup.name,
     resourceName: aksCluster.name,
-});
+}));
 
-// Extract and export the kubeconfig
-export const kubeconfig = creds.kubeconfigs.apply(kc => 
-    kc && kc[0] ? pulumi.secret(Buffer.from(kc[0].value, "base64").toString()) : "Cluster not ready"
+// Corrected: Extract kubeconfig safely
+export const kubeconfig = creds.apply(c => 
+    c.kubeconfigs && c.kubeconfigs.length > 0 
+        ? pulumi.secret(Buffer.from(c.kubeconfigs[0].value, "base64").toString()) 
+        : pulumi.secret("Cluster not ready")
 );
