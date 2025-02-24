@@ -60,3 +60,4 @@ const appGateway = new azure.network.ApplicationGateway("app-gateway-s5", {
 
 // Export kubeconfig for kubectl access
 export const kubeconfig = pulumi.secret(aksCluster.kubeConfigRaw);
+
