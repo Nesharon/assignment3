@@ -58,10 +58,10 @@ const appGateway = new azure.network.ApplicationGateway("app-gateway-s5", {
         cookieBasedAffinity: "Disabled",
         requestTimeout: 20,
     }],
-    httpListeners: [{
+      httpListeners: [{
         name: "appGatewayHttpListener",
         frontendIPConfiguration: {
-            id: pulumi.interpolate`${publicIp.id}`,
+            id: pulumi.interpolate`${appGateway.id}/frontendIPConfigurations/appGatewayFrontendIP`,
         },
         frontendPort: {
             id: pulumi.interpolate`${appGateway.id}/frontendPorts/appGatewayFrontendPort`,
@@ -75,6 +75,7 @@ const appGateway = new azure.network.ApplicationGateway("app-gateway-s5", {
         ruleSetVersion: "3.2",
     },
 });
+const httpListener = appGateway.httpListeners?.[0]?.name || "appGatewayHttpListener";
 
 // // ✅ Create HttpListener **Separately** After App Gateway is Created
 // const httpListener = new azure.network.ApplicationGatewayHttpListener("appGatewayHttpListener", {
