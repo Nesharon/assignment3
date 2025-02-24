@@ -1,0 +1,17 @@
+{
+  "name": "pulumi-aks",
+  "version": "1.0.0",
+  "description": "Pulumi project to deploy AKS with App Gateway",
+  "main": "index.ts",
+  "scripts": {
+    "start": "pulumi up"
+  },
+  "dependencies": {
+    "@pulumi/pulumi": "^3.0.0",
+    "@pulumi/azure-native": "^1.0.0",
+    "@pulumi/kubernetes": "^3.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^4.0.0"
+  }
+}
