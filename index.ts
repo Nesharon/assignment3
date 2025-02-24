@@ -46,6 +46,7 @@ const aksCluster = new azure.containerservice.ManagedCluster("aks-cluster-s5", {
     networkProfile: {
         networkPlugin: "azure",
         serviceCidr: "10.4.0.0/16", // Non-overlapping Service CIDR
+        dnsServiceIp: "10.4.0.10", // Fixed error: DNS Service IP must be in Service CIDR range
     },
 });
 
@@ -71,7 +72,14 @@ const appGateway = new azure.network.ApplicationGateway("app-gateway-s5", {
         port: 80,
     }],
     backendAddressPools: [{
-        name: "appGatewayBackendPool", // Fixed error: Added required backend address pool
+        name: "appGatewayBackendPool", 
+    }],
+    backendHttpSettingsCollection: [{  
+        name: "appGatewayBackendHttpSettings",
+        port: 80,
+        protocol: "Http",
+        cookieBasedAffinity: "Disabled",
+        requestTimeout: 20,
     }],
     webApplicationFirewallConfiguration: {
         enabled: true,
