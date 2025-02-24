@@ -11,13 +11,13 @@ const resourceGroup = new azure.resources.ResourceGroup("aks-rg-s5", {
 const vnet = new azure.network.VirtualNetwork("aks-vnet", {
     resourceGroupName: resourceGroup.name,
     location: resourceGroup.location,
-    addressSpace: { addressPrefixes: ["10.0.0.0/16"] },
+    addressSpace: { addressPrefixes: ["10.2.0.0/16"] },
 });
 
 const subnet = new azure.network.Subnet("aks-subnet-s5", {
     resourceGroupName: resourceGroup.name,
     virtualNetworkName: vnet.name,
-    addressPrefix: "10.0.1.0/24",
+    addressPrefix: "10.2.1.0/24",
 });
 
 // Create a Public IP for Application Gateway
@@ -45,7 +45,7 @@ const aksCluster = new azure.containerservice.ManagedCluster("aks-cluster-s5", {
     identity: { type: "SystemAssigned" },
     networkProfile: {
         networkPlugin: "azure",
-        serviceCidr: "10.2.0.0/16", // Non-overlapping Service CIDR
+        serviceCidr: "10.0.0.0/16", // Non-overlapping Service CIDR
     },
 });
 
