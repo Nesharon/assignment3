@@ -18,7 +18,7 @@ const subnet = new azure.network.Subnet("aks-subnet-s5", {
     resourceGroupName: resourceGroup.name,
     virtualNetworkName: vnet.name,
     addressPrefix: "10.3.1.0/24",
-});
+} { dependsOn: [vnet] });
 
 // Create a Public IP for Application Gateway
 const publicIp = new azure.network.PublicIPAddress("appgw-public-ip", {
@@ -45,10 +45,17 @@ const aksCluster = new azure.containerservice.ManagedCluster("aks-cluster-s5", {
     identity: { type: "SystemAssigned" },
     networkProfile: {
         networkPlugin: "azure",
-        serviceCidr: "10.4.0.0/16", // Non-overlapping Service CIDR
-        
+        serviceCidr: "10.4.0.0/16", // Non-overlapping Service CIDR      
     },
-});
+    addonProfiles: {  
+        ingressApplicationGateway: {
+            enabled: true,
+            config: {
+                applicationGatewayId: appGateway.id,
+            },
+        },
+    },
+}, { dependsOn: [appGateway] });
 
 // Deploy Application Gateway with WAF enabled
 const appGateway = new azure.network.ApplicationGateway("app-gateway-s5", {
