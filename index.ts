@@ -11,13 +11,13 @@ const resourceGroup = new azure.resources.ResourceGroup("aks-rg-s5", {
 const vnet = new azure.network.VirtualNetwork("aks-vnet", {
     resourceGroupName: resourceGroup.name,
     location: resourceGroup.location,
-    addressSpace: { addressPrefixes: ["10.0.0.0/16"] },
+    addressSpace: { addressPrefixes: ["10.3.0.0/16"] },
 });
 
 const subnet = new azure.network.Subnet("aks-subnet-s5", {
     resourceGroupName: resourceGroup.name,
     virtualNetworkName: vnet.name,
-    addressPrefix: "10.0.1.0/24",
+    addressPrefix: "10.3.1.0/24",
 });
 
 // Create a Public IP for Application Gateway
@@ -45,7 +45,7 @@ const aksCluster = new azure.containerservice.ManagedCluster("aks-cluster-s5", {
     identity: { type: "SystemAssigned" },
     networkProfile: {
         networkPlugin: "azure",
-        serviceCidr: "10.2.0.0/16", // Non-overlapping Service CIDR
+        serviceCidr: "10.4.0.0/16", // Non-overlapping Service CIDR
     },
 });
 
@@ -70,6 +70,9 @@ const appGateway = new azure.network.ApplicationGateway("app-gateway-s5", {
         name: "appGatewayFrontendPort",
         port: 80,
     }],
+    backendAddressPools: [{
+        name: "appGatewayBackendPool", // Fixed error: Added required backend address pool
+    }],
     webApplicationFirewallConfiguration: {
         enabled: true,
         firewallMode: "Prevention",
@@ -93,6 +96,5 @@ const kubeconfig = creds.apply(c => {
     const encoded = c.kubeconfigs?.[0]?.value || "";
     return Buffer.from(encoded, "base64").toString();
 });
-
 
 export const kubeconfigSecret = pulumi.secret(kubeconfig);
