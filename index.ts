@@ -46,7 +46,7 @@ const aksCluster = new azure.containerservice.ManagedCluster("aks-cluster-s5", {
     networkProfile: {
         networkPlugin: "azure",
         serviceCidr: "10.4.0.0/16", // Non-overlapping Service CIDR
-        dnsServiceIp: "10.4.0.10", // Fixed error: DNS Service IP must be in Service CIDR range
+        
     },
 });
 
