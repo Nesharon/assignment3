@@ -52,8 +52,10 @@ const appGateway = new azure.network.ApplicationGateway("app-gateway-s5", {
     webApplicationFirewallConfiguration: {
         enabled: true,
         firewallMode: "Prevention",
+        ruleSetType: "OWASP", // Required field
+        ruleSetVersion: "3.2", // Required field
     },
 });
 
 // Export kubeconfig for kubectl access
-export const kubeconfig = aksCluster.kubeConfig.apply(config => pulumi.secret(config));
+export const kubeconfig = aksCluster.kubeConfigs.apply(configs => pulumi.secret(configs[0].value));
