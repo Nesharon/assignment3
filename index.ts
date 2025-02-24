@@ -70,6 +70,10 @@ const creds = pulumi
     );
 
 // Export kubeconfig for kubectl access
-export const kubeconfig = creds.kubeconfigs.apply(kc => 
-    Buffer.from(kc.kubeconfigs[0].value, "base64").toString()
-);
+const kubeconfig = creds.apply(c => {
+    const encoded = c.kubeconfigs?.[0]?.value || "";
+    return Buffer.from(encoded, "base64").toString();
+});
+
+export const kubeconfigSecret = pulumi.secret(kubeconfig);
+
