@@ -94,4 +94,5 @@ const kubeconfig = creds.apply(c => {
     return Buffer.from(encoded, "base64").toString();
 });
 
+
 export const kubeconfigSecret = pulumi.secret(kubeconfig);
