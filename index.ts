@@ -18,7 +18,7 @@ const subnet = new azure.network.Subnet("aks-subnet-s5", {
     addressPrefix: "10.0.1.0/24",
 });
 
-// Deploy AKS Cluster with App Gateway Ingress Controller (AGIC)
+// Deploy AKS Cluster
 const aksCluster = new azure.containerservice.ManagedCluster("aks-cluster-s5", {
     resourceGroupName: resourceGroup.name,
     location: resourceGroup.location,
@@ -33,9 +33,6 @@ const aksCluster = new azure.containerservice.ManagedCluster("aks-cluster-s5", {
     identity: { type: "SystemAssigned" },
     networkProfile: {
         networkPlugin: "azure",
-    },
-    ingressProfile: {
-        webAppRouting: { enabled: true }, // Enables Application Gateway Ingress Controller
     },
 });
 
@@ -52,12 +49,11 @@ const appGateway = new azure.network.ApplicationGateway("app-gateway-s5", {
         name: "appGatewayIpConfig",
         subnet: { id: subnet.id },
     }],
-    wafConfiguration: {
+    webApplicationFirewallConfiguration: {
         enabled: true,
         firewallMode: "Prevention",
     },
 });
 
 // Export kubeconfig for kubectl access
-export const kubeconfig = pulumi.secret(aksCluster.kubeConfigRaw);
-
+export const kubeconfig = aksCluster.kubeConfig.apply(config => pulumi.secret(config));
