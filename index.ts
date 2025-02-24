@@ -58,16 +58,7 @@ const appGateway = new azure.network.ApplicationGateway("app-gateway-s5", {
         cookieBasedAffinity: "Disabled",
         requestTimeout: 20,
     }],
-     httpListeners: [{  
-        name: "appGatewayHttpListener",
-        frontendIPConfiguration: {
-            id: pulumi.interpolate`${appGateway.id}/frontendIPConfigurations/appGatewayFrontendIP`, 
-        },
-        frontendPort: {
-            id: pulumi.interpolate`${appGateway.id}/frontendPorts/appGatewayFrontendPort`,  
-        },
-        protocol: "Http",
-    }],
+    
     webApplicationFirewallConfiguration: {
         enabled: true,
         firewallMode: "Prevention",
@@ -75,6 +66,19 @@ const appGateway = new azure.network.ApplicationGateway("app-gateway-s5", {
         ruleSetVersion: "3.2",
     },
 });
+
+// ✅ Create HttpListener **Separately** After App Gateway is Created
+const httpListener = new azure.network.ApplicationGatewayHttpListener("appGatewayHttpListener", {
+    resourceGroupName: resourceGroup.name,
+    applicationGatewayName: appGateway.name,
+    frontendIPConfiguration: {
+        id: pulumi.interpolate`${appGateway.id}/frontendIPConfigurations/appGatewayFrontendIP`,
+    },
+    frontendPort: {
+        id: pulumi.interpolate`${appGateway.id}/frontendPorts/appGatewayFrontendPort`,
+    },
+    protocol: "Http",
+}, { dependsOn: [appGateway] });
 
 const aksCluster = new azure.containerservice.ManagedCluster("aks-cluster-s5", {
     resourceGroupName: resourceGroup.name,
@@ -102,7 +106,7 @@ const aksCluster = new azure.containerservice.ManagedCluster("aks-cluster-s5", {
             },
         },
     },
-}, { dependsOn: [appGateway] });  
+}, { dependsOn: [appGateway, httpListener] });  
 
 // Get AKS credentials
 const creds = pulumi
