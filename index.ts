@@ -20,22 +20,12 @@ const subnet = new azure.network.Subnet("aks-subnet-s5", {
     addressPrefix: "10.0.1.0/24",
 });
 
-// Deploy AKS Cluster with App Gateway Ingress Controller (AGIC)
-const aksCluster = new azure.containerservice.ManagedCluster("aks-cluster-s5", {
+// Public IP for Application Gateway
+const publicIp = new azure.network.PublicIPAddress("appgw-public-ip", {
     resourceGroupName: resourceGroup.name,
     location: resourceGroup.location,
-    dnsPrefix: "myaks",
-    agentPoolProfiles: [{
-        name: "agentpool",
-        count: 2,
-        vmSize: "Standard_D2_v2",
-        vnetSubnetID: subnet.id,
-    }],
-    enableRBAC: true,
-    identity: { type: "SystemAssigned" },
-    networkProfile: {
-        networkPlugin: "azure",
-    },
+    sku: { name: "Standard" },
+    publicIPAllocationMethod: "Static",
 });
 
 // Deploy Application Gateway with WAF enabled
@@ -51,11 +41,34 @@ const appGateway = new azure.network.ApplicationGateway("app-gateway-s5", {
         name: "appGatewayIpConfig",
         subnet: { id: subnet.id },
     }],
+    frontendIPConfigurations: [{
+        name: "appGatewayFrontendIp",
+        publicIPAddress: { id: publicIp.id },
+    }],
     webApplicationFirewallConfiguration: {
         enabled: true,
         firewallMode: "Prevention",
         ruleSetType: "OWASP",
         ruleSetVersion: "3.2", // Required fields
+    },
+});
+
+// Deploy AKS Cluster with App Gateway Ingress Controller (AGIC)
+const aksCluster = new azure.containerservice.ManagedCluster("aks-cluster-s5", {
+    resourceGroupName: resourceGroup.name,
+    location: resourceGroup.location,
+    dnsPrefix: "myaks",
+    agentPoolProfiles: [{
+        name: "systempool",
+        count: 2,
+        vmSize: "Standard_D2_v2",
+        vnetSubnetID: subnet.id,
+        mode: "System", // Ensure at least one system pool
+    }],
+    enableRBAC: true,
+    identity: { type: "SystemAssigned" },
+    networkProfile: {
+        networkPlugin: "azure",
     },
 });
 
@@ -76,4 +89,3 @@ const kubeconfig = creds.apply(c => {
 });
 
 export const kubeconfigSecret = pulumi.secret(kubeconfig);
-
