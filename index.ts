@@ -25,6 +25,7 @@ const publicIp = new azure.network.PublicIPAddress("appgw-public-ip", {
     resourceGroupName: resourceGroup.name,
     location: resourceGroup.location,
     sku: { name: "Standard" },
+    publicIPAllocationMethod: "Static", // Fixed error: Standard SKU must be Static
 });
 
 // Deploy AKS Cluster with App Gateway Ingress Controller (AGIC)
@@ -45,6 +46,7 @@ const aksCluster = new azure.containerservice.ManagedCluster("aks-cluster-s5", {
     networkProfile: {
         networkPlugin: "azure",
         serviceCidr: "10.2.0.0/16", // Non-overlapping Service CIDR
+        dnsServiceIp: "10.2.0.10", // Fixed error: Must be within Service CIDR range
     },
 });
 
