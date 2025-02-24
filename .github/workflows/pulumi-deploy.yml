@@ -27,6 +27,7 @@ jobs:
         run: |
           export PATH=$PATH:$HOME/.pulumi/bin
           pulumi login
+          pulumi stack select dev || pulumi stack init dev
 
       - name: Install Dependencies
         run: npm install
