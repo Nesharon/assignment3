@@ -3,7 +3,7 @@ name: Pulumi Deploy
 on:
   push:
     branches:
-      - main  # Change to your branch if needed
+      - main  # Change if using a different branch
 
 jobs:
   deploy:
@@ -22,6 +22,8 @@ jobs:
         run: curl -fsSL https://get.pulumi.com | sh
 
       - name: Setup Pulumi
+        env:
+          PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
         run: |
           export PATH=$PATH:$HOME/.pulumi/bin
           pulumi login
@@ -36,4 +38,6 @@ jobs:
           ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
           ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
           ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
-        run: pulumi up -y
+        run: |
+          export PATH=$PATH:$HOME/.pulumi/bin
+          pulumi up -y
