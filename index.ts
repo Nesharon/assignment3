@@ -58,13 +58,13 @@ const appGateway = new azure.network.ApplicationGateway("app-gateway-s5", {
         cookieBasedAffinity: "Disabled",
         requestTimeout: 20,
     }],
-     httpListeners: [{ 
+     httpListeners: [{  
         name: "appGatewayHttpListener",
         frontendIPConfiguration: {
-            id: pulumi.output(publicIp.id),
+            id: pulumi.interpolate`${appGateway.id}/frontendIPConfigurations/appGatewayFrontendIP`, 
         },
         frontendPort: {
-            id: pulumi.output(publicIp.id),
+            id: pulumi.interpolate`${appGateway.id}/frontendPorts/appGatewayFrontendPort`,  
         },
         protocol: "Http",
     }],
