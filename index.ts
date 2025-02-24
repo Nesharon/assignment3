@@ -1,5 +1,6 @@
 import * as pulumi from "@pulumi/pulumi";
 import * as azure from "@pulumi/azure-native";
+import * as k8s from "@pulumi/kubernetes";
 
 // Create an Azure Resource Group
 const resourceGroup = new azure.resources.ResourceGroup("aks-rg-s5");
@@ -17,7 +18,7 @@ const subnet = new azure.network.Subnet("aks-subnet-s5", {
     addressPrefix: "10.0.1.0/24",
 });
 
-// Deploy AKS Cluster
+// Deploy AKS Cluster with App Gateway Ingress Controller (AGIC)
 const aksCluster = new azure.containerservice.ManagedCluster("aks-cluster-s5", {
     resourceGroupName: resourceGroup.name,
     location: resourceGroup.location,
@@ -35,15 +36,36 @@ const aksCluster = new azure.containerservice.ManagedCluster("aks-cluster-s5", {
     },
 });
 
-// Retrieve AKS credentials properly
-const creds = pulumi.output(azure.containerservice.listManagedClusterUserCredentials({
+// Deploy Application Gateway with WAF enabled
+const appGateway = new azure.network.ApplicationGateway("app-gateway-s5", {
     resourceGroupName: resourceGroup.name,
-    resourceName: aksCluster.name,
-}));
+    location: resourceGroup.location,
+    sku: {
+        name: "WAF_v2",
+        tier: "WAF_v2",
+        capacity: 2,
+    },
+    gatewayIPConfigurations: [{
+        name: "appGatewayIpConfig",
+        subnet: { id: subnet.id },
+    }],
+    webApplicationFirewallConfiguration: {
+        enabled: true,
+        firewallMode: "Prevention",
+        ruleSetType: "OWASP",
+        ruleSetVersion: "3.2", // Must provide ruleSetType & ruleSetVersion
+    },
+});
 
-// Corrected: Extract kubeconfig safely
-export const kubeconfig = creds.apply(c => 
-    c.kubeconfigs && c.kubeconfigs.length > 0 
-        ? pulumi.secret(Buffer.from(c.kubeconfigs[0].value, "base64").toString()) 
-        : pulumi.secret("Cluster not ready")
-);
+// Get AKS credentials correctly
+const creds = pulumi
+    .all([resourceGroup.name, aksCluster.name])
+    .apply(([rgName, aksName]) =>
+        azure.containerservice.listManagedClusterUserCredentials({
+            resourceGroupName: rgName,
+            resourceName: aksName,
+        })
+    );
+
+// Export kubeconfig for kubectl access
+export const kubeconfig = creds.kubeconfigs.apply(kc => Buffer.from(kc[0].value, "base64").toString());
