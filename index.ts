@@ -20,12 +20,34 @@ const subnet = new azure.network.Subnet("aks-subnet-s5", {
     addressPrefix: "10.0.1.0/24",
 });
 
-// Public IP for Application Gateway
+// Create a Public IP for Application Gateway
 const publicIp = new azure.network.PublicIPAddress("appgw-public-ip", {
     resourceGroupName: resourceGroup.name,
     location: resourceGroup.location,
     sku: { name: "Standard" },
-    publicIPAllocationMethod: "Static",
+    allocationMethod: "Static",
+});
+
+// Deploy AKS Cluster with App Gateway Ingress Controller (AGIC)
+const aksCluster = new azure.containerservice.ManagedCluster("aks-cluster-s5", {
+    resourceGroupName: resourceGroup.name,
+    location: resourceGroup.location,
+    dnsPrefix: "myaks",
+    agentPoolProfiles: [{
+        name: "agentpool",
+        count: 2,
+        vmSize: "Standard_D2_v2",
+        vnetSubnetID: subnet.id,
+        osType: "Linux",
+        mode: "System", // Ensure at least one system pool
+    }],
+    enableRBAC: true,
+    identity: { type: "SystemAssigned" },
+    networkProfile: {
+        networkPlugin: "azure",
+        serviceCidr: "10.2.0.0/16", // Non-overlapping Service CIDR
+        dnsServiceIp: "10.2.0.10",
+    },
 });
 
 // Deploy Application Gateway with WAF enabled
@@ -42,33 +64,18 @@ const appGateway = new azure.network.ApplicationGateway("app-gateway-s5", {
         subnet: { id: subnet.id },
     }],
     frontendIPConfigurations: [{
-        name: "appGatewayFrontendIp",
+        name: "appGatewayFrontendIP",
         publicIPAddress: { id: publicIp.id },
+    }],
+    frontendPorts: [{
+        name: "appGatewayFrontendPort",
+        port: 80,
     }],
     webApplicationFirewallConfiguration: {
         enabled: true,
         firewallMode: "Prevention",
         ruleSetType: "OWASP",
         ruleSetVersion: "3.2", // Required fields
-    },
-});
-
-// Deploy AKS Cluster with App Gateway Ingress Controller (AGIC)
-const aksCluster = new azure.containerservice.ManagedCluster("aks-cluster-s5", {
-    resourceGroupName: resourceGroup.name,
-    location: resourceGroup.location,
-    dnsPrefix: "myaks",
-    agentPoolProfiles: [{
-        name: "systempool",
-        count: 2,
-        vmSize: "Standard_D2_v2",
-        vnetSubnetID: subnet.id,
-        mode: "System", // Ensure at least one system pool
-    }],
-    enableRBAC: true,
-    identity: { type: "SystemAssigned" },
-    networkProfile: {
-        networkPlugin: "azure",
     },
 });
 
