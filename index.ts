@@ -58,4 +58,8 @@ const appGateway = new azure.network.ApplicationGateway("app-gateway-s5", {
 });
 
 // Export kubeconfig for kubectl access
-export const kubeconfig = aksCluster.kubeConfigs.apply(configs => pulumi.secret(configs[0].value));
+export const kubeconfig = aksCluster.provisioningState.apply(state =>
+    state === "Succeeded"
+        ? pulumi.secret(aksCluster.accessProfiles!["clusterAdmin"].kubeConfig)
+        : pulumi.secret("Cluster is still provisioning...")
+);
