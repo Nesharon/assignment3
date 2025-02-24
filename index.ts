@@ -58,18 +58,24 @@ const appGateway = new azure.network.ApplicationGateway("app-gateway-s5", {
         cookieBasedAffinity: "Disabled",
         requestTimeout: 20,
     }],
-    httpListeners: [{  // ADD THIS BLOCK
-        name: "appGatewayHttpListener",
-        frontendIPConfiguration: { id: pulumi.interpolate`${appGateway.id}/frontendIPConfigurations/appGatewayFrontendIP` },
-        frontendPort: { id: pulumi.interpolate`${appGateway.id}/frontendPorts/appGatewayFrontendPort` },
-        protocol: "Http",
-    }],
     webApplicationFirewallConfiguration: {
         enabled: true,
         firewallMode: "Prevention",
         ruleSetType: "OWASP",
         ruleSetVersion: "3.2",
     },
+});
+
+const httpListener = new azure.network.ApplicationGatewayHttpListener("appGatewayHttpListener", {
+    resourceGroupName: resourceGroup.name,
+    applicationGatewayName: appGateway.name,  // Reference appGateway correctly
+    frontendIPConfiguration: {
+        id: appGateway.frontendIPConfigurations.apply(configs => configs[0].id), // Safe reference
+    },
+    frontendPort: {
+        id: appGateway.frontendPorts.apply(ports => ports[0].id),
+    },
+    protocol: "Http",
 });
 
 const aksCluster = new azure.containerservice.ManagedCluster("aks-cluster-s5", {
