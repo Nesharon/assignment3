@@ -36,30 +36,13 @@ const aksCluster = new azure.containerservice.ManagedCluster("aks-cluster-s5", {
     },
 });
 
-// Deploy Application Gateway with WAF enabled
-const appGateway = new azure.network.ApplicationGateway("app-gateway-s5", {
+// Retrieve KubeConfig
+const creds = azure.containerservice.listManagedClusterUserCredentials({
     resourceGroupName: resourceGroup.name,
-    location: resourceGroup.location,
-    sku: {
-        name: "WAF_v2",
-        tier: "WAF_v2",
-        capacity: 2,
-    },
-    gatewayIPConfigurations: [{
-        name: "appGatewayIpConfig",
-        subnet: { id: subnet.id },
-    }],
-    webApplicationFirewallConfiguration: {
-        enabled: true,
-        firewallMode: "Prevention",
-        ruleSetType: "OWASP", // Required field
-        ruleSetVersion: "3.2", // Required field
-    },
+    resourceName: aksCluster.name,
 });
 
-// Export kubeconfig for kubectl access
-export const kubeconfig = aksCluster.provisioningState.apply(state =>
-    state === "Succeeded"
-        ? pulumi.secret(aksCluster.accessProfiles!["clusterAdmin"].kubeConfig)
-        : pulumi.secret("Cluster is still provisioning...")
+// Extract and export the kubeconfig
+export const kubeconfig = creds.kubeconfigs.apply(kc => 
+    kc && kc[0] ? pulumi.secret(Buffer.from(kc[0].value, "base64").toString()) : "Cluster not ready"
 );
