@@ -1,3 +1,7 @@
+import * as pulumi from "@pulumi/pulumi";
+import * as azure from "@pulumi/azure-native";
+import * as k8s from "@pulumi/kubernetes";
+
 // Create an Azure Resource Group
 const resourceGroup = new azure.resources.ResourceGroup("aks-rg-s5", {
     location: "uaenorth",
@@ -24,7 +28,6 @@ const publicIp = new azure.network.PublicIPAddress("appgw-public-ip", {
     publicIPAllocationMethod: "Static",
 });
 
-// ✅ Define Application Gateway **before** AKS cluster
 const appGateway = new azure.network.ApplicationGateway("app-gateway-s5", {
     resourceGroupName: resourceGroup.name,
     location: resourceGroup.location,
@@ -63,7 +66,6 @@ const appGateway = new azure.network.ApplicationGateway("app-gateway-s5", {
     },
 });
 
-// ✅ Now define the AKS cluster **after** App Gateway
 const aksCluster = new azure.containerservice.ManagedCluster("aks-cluster-s5", {
     resourceGroupName: resourceGroup.name,
     location: resourceGroup.location,
@@ -86,11 +88,11 @@ const aksCluster = new azure.containerservice.ManagedCluster("aks-cluster-s5", {
         ingressApplicationGateway: {
             enabled: true,
             config: {
-                applicationGatewayId: appGateway.id,  // ✅ Now `appGateway` is already defined
+                applicationGatewayId: appGateway.id,  
             },
         },
     },
-}, { dependsOn: [appGateway] });  // ✅ Ensure App Gateway is created first
+}, { dependsOn: [appGateway] });  
 
 // Get AKS credentials
 const creds = pulumi
