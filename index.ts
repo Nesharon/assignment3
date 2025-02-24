@@ -2,8 +2,10 @@ import * as pulumi from "@pulumi/pulumi";
 import * as azure from "@pulumi/azure-native";
 import * as k8s from "@pulumi/kubernetes";
 
-// Create an Azure Resource Group
-const resourceGroup = new azure.resources.ResourceGroup("aks-rg-s5");
+// Create an Azure Resource Group with explicit location
+const resourceGroup = new azure.resources.ResourceGroup("aks-rg-s5", {
+    location: "EastUS", // Specify your Azure region
+});
 
 // Create a Virtual Network & Subnet
 const vnet = new azure.network.VirtualNetwork("aks-vnet", {
@@ -53,7 +55,7 @@ const appGateway = new azure.network.ApplicationGateway("app-gateway-s5", {
         enabled: true,
         firewallMode: "Prevention",
         ruleSetType: "OWASP",
-        ruleSetVersion: "3.2", // Must provide ruleSetType & ruleSetVersion
+        ruleSetVersion: "3.2", // Required fields
     },
 });
 
@@ -68,4 +70,6 @@ const creds = pulumi
     );
 
 // Export kubeconfig for kubectl access
-export const kubeconfig = creds.kubeconfigs.apply(kc => Buffer.from(kc[0].value, "base64").toString());
+export const kubeconfig = creds.kubeconfigs.apply(kc => 
+    Buffer.from(kc.kubeconfigs[0].value, "base64").toString()
+);
