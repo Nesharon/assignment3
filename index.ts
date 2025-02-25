@@ -58,16 +58,16 @@ const appGateway = new azure.network.ApplicationGateway("app-gateway-s5", {
         cookieBasedAffinity: "Disabled",
         requestTimeout: 20,
     }],
-    //   httpListeners: [{
-    //     name: "appGatewayHttpListener",
-    //     frontendIPConfiguration: {
-    //         id: pulumi.interpolate`${appGateway.id}/frontendIPConfigurations/appGatewayFrontendIP`,
-    //     },
-    //     frontendPort: {
-    //         id: pulumi.interpolate`${appGateway.id}/frontendPorts/appGatewayFrontendPort`,
-    //     },
-    //     protocol: "Http",
-    // }],
+      httpListeners: [{
+        name: "appGatewayHttpListener",
+        frontendIPConfiguration: {
+            id: pulumi.interpolate`${appGateway.id}/frontendIPConfigurations/appGatewayFrontendIP`,
+        },
+        frontendPort: {
+            id: pulumi.interpolate`${appGateway.id}/frontendPorts/appGatewayFrontendPort`,
+        },
+        protocol: "Http",
+    }],
     webApplicationFirewallConfiguration: {
         enabled: true,
         firewallMode: "Prevention",
@@ -76,17 +76,17 @@ const appGateway = new azure.network.ApplicationGateway("app-gateway-s5", {
     },
 });
 
-const httpListener = new azure.network.ApplicationGatewayHttpListener("appGatewayHttpListener", {
-    resourceGroupName: resourceGroup.name,
-    applicationGatewayName: appGateway.name,
-    frontendIPConfiguration: {
-        id: pulumi.interpolate`${appGateway.id}/frontendIPConfigurations/appGatewayFrontendIP`,
-    },
-    frontendPort: {
-        id: pulumi.interpolate`${appGateway.id}/frontendPorts/appGatewayFrontendPort`,
-    },
-    protocol: "Http",
-}, { dependsOn: [appGateway] });
+// const httpListener = new azure.network.ApplicationGatewayHttpListener("appGatewayHttpListener", {
+//     resourceGroupName: resourceGroup.name,
+//     applicationGatewayName: appGateway.name,
+//     frontendIPConfiguration: {
+//         id: pulumi.interpolate`${appGateway.id}/frontendIPConfigurations/appGatewayFrontendIP`,
+//     },
+//     frontendPort: {
+//         id: pulumi.interpolate`${appGateway.id}/frontendPorts/appGatewayFrontendPort`,
+//     },
+//     protocol: "Http",
+// }, { dependsOn: [appGateway] });
 
 const aksCluster = new azure.containerservice.ManagedCluster("aks-cluster-s5", {
     resourceGroupName: resourceGroup.name,
@@ -114,7 +114,7 @@ const aksCluster = new azure.containerservice.ManagedCluster("aks-cluster-s5", {
             },
         },
     },
-}, { dependsOn: [appGateway, httpListener] });  
+}, { dependsOn: [appGateway] });  
 
 // Get AKS credentials
 const creds = pulumi
