@@ -76,20 +76,17 @@ const appGateway = new azure.network.ApplicationGateway("app-gateway-s5", {
     },
 });
 
-const httpListener = appGateway.httpListeners?.[0]?.name || "appGatewayHttpListener";
-
-// // ✅ Create HttpListener **Separately** After App Gateway is Created
-// const httpListener = new azure.network.ApplicationGatewayHttpListener("appGatewayHttpListener", {
-//     resourceGroupName: resourceGroup.name,
-//     applicationGatewayName: appGateway.name,
-//     frontendIPConfiguration: {
-//         id: pulumi.interpolate`${appGateway.id}/frontendIPConfigurations/appGatewayFrontendIP`,
-//     },
-//     frontendPort: {
-//         id: pulumi.interpolate`${appGateway.id}/frontendPorts/appGatewayFrontendPort`,
-//     },
-//     protocol: "Http",
-// }, { dependsOn: [appGateway] });
+const httpListener = new azure.network.ApplicationGatewayHttpListener("appGatewayHttpListener", {
+    resourceGroupName: resourceGroup.name,
+    applicationGatewayName: appGateway.name,
+    frontendIPConfiguration: {
+        id: pulumi.interpolate`${appGateway.id}/frontendIPConfigurations/appGatewayFrontendIP`,
+    },
+    frontendPort: {
+        id: pulumi.interpolate`${appGateway.id}/frontendPorts/appGatewayFrontendPort`,
+    },
+    protocol: "Http",
+}, { dependsOn: [appGateway] });
 
 const aksCluster = new azure.containerservice.ManagedCluster("aks-cluster-s5", {
     resourceGroupName: resourceGroup.name,
