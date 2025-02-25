@@ -75,6 +75,7 @@ const appGateway = new azure.network.ApplicationGateway("app-gateway-s5", {
         ruleSetVersion: "3.2",
     },
 });
+
 const httpListener = appGateway.httpListeners?.[0]?.name || "appGatewayHttpListener";
 
 // // ✅ Create HttpListener **Separately** After App Gateway is Created
