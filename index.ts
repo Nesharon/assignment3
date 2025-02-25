@@ -29,12 +29,12 @@ const publicIp = new azure.network.PublicIPAddress("appgw-public-ip", {
 });
 
 // Define names dynamically
-const backendAddressPoolName = pulumi.interpolate`${vnet.name}-beap`;
-const frontendPortName = pulumi.interpolate`${vnet.name}-feport`;
-const frontendIpConfigurationName = pulumi.interpolate`${vnet.name}-feip`;
-const httpSettingName = pulumi.interpolate`${vnet.name}-be-htst`;
-const listenerName = pulumi.interpolate`${vnet.name}-httplstn`;
-const requestRoutingRuleName = pulumi.interpolate`${vnet.name}-rqrt`;
+const backendAddressPoolName = "appgw-beap";
+const frontendPortName = "appgw-feport";
+const frontendIpConfigurationName = "appgw-feip";
+const httpSettingName = "appgw-be-htst";
+const listenerName = "appgw-httplstn";
+const requestRoutingRuleName = "appgw-rqrt";
 
 const appGateway = new azure.network.ApplicationGateway("app-gateway-s5", {
     resourceGroupName: resourceGroup.name,
