@@ -3,7 +3,7 @@ import * as azure from "@pulumi/azure-native";
 import * as k8s from "@pulumi/kubernetes";
 
 // Create an Azure Resource Group
-const resourceGroup = new azure.resources.ResourceGroup("aks-rg-s5", {
+const resourceGroup = new azure.resources.ResourceGroup("aks-rg", {
     location: "uaenorth",
 });
 
@@ -14,7 +14,7 @@ const vnet = new azure.network.VirtualNetwork("aks-vnet", {
     addressSpace: { addressPrefixes: ["10.3.0.0/16"] },
 });
 
-const subnet = new azure.network.Subnet("aks-subnet-s5", {
+const subnet = new azure.network.Subnet("aks-subnet", {
     resourceGroupName: resourceGroup.name,
     virtualNetworkName: vnet.name,
     addressPrefix: "10.3.1.0/24",
@@ -28,15 +28,8 @@ const publicIp = new azure.network.PublicIPAddress("appgw-public-ip", {
     publicIPAllocationMethod: "Static",
 });
 
-// Define names dynamically
-const backendAddressPoolName = "appgw-beap";
-const frontendPortName = "appgw-feport";
-const frontendIpConfigurationName = "appgw-feip";
-const httpSettingName = "appgw-be-htst";
-const listenerName = "appgw-httplstn";
-const requestRoutingRuleName = "appgw-rqrt";
-
-const appGateway = new azure.network.ApplicationGateway("app-gateway-s5", {
+// Create an Application Gateway
+const appGateway = new azure.network.ApplicationGateway("app-gateway", {
     resourceGroupName: resourceGroup.name,
     location: resourceGroup.location,
     sku: {
@@ -49,47 +42,35 @@ const appGateway = new azure.network.ApplicationGateway("app-gateway-s5", {
         subnet: { id: subnet.id },
     }],
     frontendIPConfigurations: [{
-        name: frontendIpConfigurationName,
+        name: "appgw-feip",
         publicIPAddress: { id: publicIp.id },
     }],
     frontendPorts: [{
-        name: frontendPortName,
+        name: "appgw-feport",
         port: 80,
     }],
     backendAddressPools: [{
-        name: backendAddressPoolName,
+        name: "appgw-beap",
     }],
     backendHttpSettingsCollection: [{
-        name: httpSettingName,
-        cookieBasedAffinity: "Disabled",
-        path: "/",
+        name: "appgw-be-htst",
         port: 80,
         protocol: "Http",
         requestTimeout: 60,
     }],
     httpListeners: [{
-        name: listenerName,
-        frontendIPConfiguration: pulumi.output(appGateway.id).apply(id => ({
-            id: `${id}/frontendIPConfigurations/${frontendIpConfigurationName}`
-        })),
-        frontendPort: pulumi.output(appGateway.id).apply(id => ({
-            id: `${id}/frontendPorts/${frontendPortName}`
-        })),
+        name: "appgw-httplstn",
+        frontendIPConfiguration: { id: pulumi.interpolate`${appGateway.id}/frontendIPConfigurations/appgw-feip` },
+        frontendPort: { id: pulumi.interpolate`${appGateway.id}/frontendPorts/appgw-feport` },
         protocol: "Http",
     }],
     requestRoutingRules: [{
-        name: requestRoutingRuleName,
+        name: "appgw-rqrt",
         priority: 1,
         ruleType: "Basic",
-        httpListener: pulumi.output(appGateway.id).apply(id => ({
-            id: `${id}/httpListeners/${listenerName}`
-        })),
-        backendAddressPool: pulumi.output(appGateway.id).apply(id => ({
-            id: `${id}/backendAddressPools/${backendAddressPoolName}`
-        })),
-        backendHttpSettings: pulumi.output(appGateway.id).apply(id => ({
-            id: `${id}/backendHttpSettingsCollection/${httpSettingName}`
-        })),
+        httpListener: { id: pulumi.interpolate`${appGateway.id}/httpListeners/appgw-httplstn` },
+        backendAddressPool: { id: pulumi.interpolate`${appGateway.id}/backendAddressPools/appgw-beap` },
+        backendHttpSettings: { id: pulumi.interpolate`${appGateway.id}/backendHttpSettingsCollection/appgw-be-htst` },
     }],
     webApplicationFirewallConfiguration: {
         enabled: true,
@@ -99,11 +80,8 @@ const appGateway = new azure.network.ApplicationGateway("app-gateway-s5", {
     },
 });
 
-
-// ✅ Ensure references are correctly created AFTER appGateway is defined
-const httpListener = pulumi.interpolate`${appGateway.id}/httpListeners/${listenerName}`;
-
-const aksCluster = new azure.containerservice.ManagedCluster("aks-cluster-s5", {
+// Create an AKS Cluster with Application Gateway Ingress Controller
+const aksCluster = new azure.containerservice.ManagedCluster("aks-cluster", {
     resourceGroupName: resourceGroup.name,
     location: resourceGroup.location,
     dnsPrefix: "myaks",
@@ -125,11 +103,11 @@ const aksCluster = new azure.containerservice.ManagedCluster("aks-cluster-s5", {
         ingressApplicationGateway: {
             enabled: true,
             config: {
-                applicationGatewayId: appGateway.id,  
+                applicationGatewayId: appGateway.id,
             },
         },
     },
-}, { dependsOn: [appGateway] });  
+}, { dependsOn: [appGateway] });
 
 // Get AKS credentials
 const creds = pulumi
@@ -148,3 +126,4 @@ const kubeconfig = creds.apply(c => {
 });
 
 export const kubeconfigSecret = pulumi.secret(kubeconfig);
+
