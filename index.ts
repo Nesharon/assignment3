@@ -28,54 +28,7 @@ const publicIp = new azure.network.PublicIPAddress("appgw-public-ip", {
     publicIPAllocationMethod: "Static",
 });
 
-// const appGateway = new azure.network.ApplicationGateway("app-gateway-s5", {
-//     resourceGroupName: resourceGroup.name,
-//     location: resourceGroup.location,
-//     sku: {
-//         name: "WAF_v2",
-//         tier: "WAF_v2",
-//         capacity: 2,
-//     },
-//     gatewayIPConfigurations: [{
-//         name: "appGatewayIpConfig",
-//         subnet: { id: subnet.id },
-//     }],
-//     frontendIPConfigurations: [{
-//         name: "appGatewayFrontendIP",
-//         publicIPAddress: { id: publicIp.id },
-//     }],
-//     frontendPorts: [{
-//         name: "appGatewayFrontendPort",
-//         port: 80,
-//     }],
-//     backendAddressPools: [{
-//         name: "appGatewayBackendPool",
-//     }],
-//     backendHttpSettingsCollection: [{
-//         name: "appGatewayBackendHttpSettings",
-//         port: 80,
-//         protocol: "Http",
-//         cookieBasedAffinity: "Disabled",
-//         requestTimeout: 20,
-//     }],
-//     httpListeners: [{
-//         name: "appGatewayHttpListener",
-//         frontendIPConfiguration: {
-//             id: pulumi.interpolate`${appGateway.id}/frontendIPConfigurations/appGatewayFrontendIP`,
-//         },
-//         frontendPort: {
-//             id: pulumi.interpolate`${appGateway.id}/frontendPorts/appGatewayFrontendPort`,
-//         },
-//         protocol: "Http",
-//     }],
-//     webApplicationFirewallConfiguration: {
-//         enabled: true,
-//         firewallMode: "Prevention",
-//         ruleSetType: "OWASP",
-//         ruleSetVersion: "3.2",
-//     },
-// });
-
+// Define names dynamically
 const backendAddressPoolName = pulumi.interpolate`${vnet.name}-beap`;
 const frontendPortName = pulumi.interpolate`${vnet.name}-feport`;
 const frontendIpConfigurationName = pulumi.interpolate`${vnet.name}-feip`;
@@ -92,22 +45,21 @@ const appGateway = new azure.network.ApplicationGateway("app-gateway-s5", {
         capacity: 2,
     },
     gatewayIPConfigurations: [{
-    name: "appGatewayIpConfig",
-    subnet: { id: subnet.id },  // ✅ Corrected
+        name: "appGatewayIpConfig",
+        subnet: { id: subnet.id },
     }],
-
+    frontendIPConfigurations: [{  // ✅ Fixed property name
+        name: frontendIpConfigurationName,
+        publicIPAddress: { id: publicIp.id },
+    }],
     frontendPorts: [{
         name: frontendPortName,
         port: 80,
     }],
-    frontendIpConfigurations: [{
-        name: frontendIpConfigurationName,
-        publicIpAddressId: publicIp.id,
-    }],
     backendAddressPools: [{
         name: backendAddressPoolName,
     }],
-    backendHttpSettings: [{
+    backendHttpSettingsCollection: [{  // ✅ Fixed property name
         name: httpSettingName,
         cookieBasedAffinity: "Disabled",
         path: "/",
@@ -116,21 +68,19 @@ const appGateway = new azure.network.ApplicationGateway("app-gateway-s5", {
         requestTimeout: 60,
     }],
     httpListeners: [{
-    name: listenerName,
-    frontendIPConfiguration: { id: pulumi.interpolate`${appGateway.id}/frontendIPConfigurations/${frontendIpConfigurationName}` },  // ✅ Corrected
-    frontendPort: { id: pulumi.interpolate`${appGateway.id}/frontendPorts/${frontendPortName}` },  // ✅ Corrected
-    protocol: "Http",
+        name: listenerName,
+        frontendIPConfiguration: { name: frontendIpConfigurationName },  // ✅ Correct reference
+        frontendPort: { name: frontendPortName },  // ✅ Correct reference
+        protocol: "Http",
     }],
-
     requestRoutingRules: [{
-    name: requestRoutingRuleName,
-    priority: 1,
-    ruleType: "Basic",
-    httpListener: { id: pulumi.interpolate`${appGateway.id}/httpListeners/${listenerName}` },  // ✅ Corrected
-    backendAddressPool: { id: pulumi.interpolate`${appGateway.id}/backendAddressPools/${backendAddressPoolName}` },  // ✅ Corrected
-    backendHttpSettings: { id: pulumi.interpolate`${appGateway.id}/backendHttpSettings/${httpSettingName}` },  // ✅ Corrected
+        name: requestRoutingRuleName,
+        priority: 1,
+        ruleType: "Basic",
+        httpListener: { name: listenerName },  // ✅ Correct reference
+        backendAddressPool: { name: backendAddressPoolName },  // ✅ Correct reference
+        backendHttpSettings: { name: httpSettingName },  // ✅ Correct reference
     }],
-
     webApplicationFirewallConfiguration: {
         enabled: true,
         firewallMode: "Prevention",
@@ -139,7 +89,8 @@ const appGateway = new azure.network.ApplicationGateway("app-gateway-s5", {
     },
 });
 
-const httpListener = pulumi.interpolate`${appGateway.id}/httpListeners/appGatewayHttpListener`;
+// ✅ Ensure references are correctly created AFTER appGateway is defined
+const httpListener = pulumi.interpolate`${appGateway.id}/httpListeners/${listenerName}`;
 
 const aksCluster = new azure.containerservice.ManagedCluster("aks-cluster-s5", {
     resourceGroupName: resourceGroup.name,
