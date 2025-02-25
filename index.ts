@@ -28,6 +28,14 @@ const publicIp = new azure.network.PublicIPAddress("appgw-public-ip", {
     publicIPAllocationMethod: "Static",
 });
 
+const backendAddressPoolName = "appgw-beap";
+const frontendPortName = "appgw-feport";
+const frontendIpConfigurationName = "appgw-feip";
+const httpSettingName = "appgw-be-htst";
+const listenerName = "appgw-httplstn";
+const requestRoutingRuleName = "appgw-rqrt";
+const httpListeners = "appw-httpl"
+
 // Create an Application Gateway
 const appGateway = new azure.network.ApplicationGateway("app-gateway", {
     resourceGroupName: resourceGroup.name,
