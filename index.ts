@@ -91,10 +91,11 @@ const appGateway = new azure.network.ApplicationGateway("app-gateway-s5", {
         tier: "WAF_v2",
         capacity: 2,
     },
-    gatewayIpConfigurations: [{
-        name: "appGatewayIpConfig",
-        subnetId: subnet.id,
+    gatewayIPConfigurations: [{
+    name: "appGatewayIpConfig",
+    subnet: { id: subnet.id },  // ✅ Corrected
     }],
+
     frontendPorts: [{
         name: frontendPortName,
         port: 80,
@@ -137,6 +138,8 @@ const appGateway = new azure.network.ApplicationGateway("app-gateway-s5", {
         ruleSetVersion: "3.2",
     },
 });
+
+const httpListener = pulumi.interpolate`${appGateway.id}/httpListeners/appGatewayHttpListener`;
 
 const aksCluster = new azure.containerservice.ManagedCluster("aks-cluster-s5", {
     resourceGroupName: resourceGroup.name,
