@@ -48,7 +48,7 @@ const appGateway = new azure.network.ApplicationGateway("app-gateway-s5", {
         name: "appGatewayIpConfig",
         subnet: { id: subnet.id },
     }],
-    frontendIPConfigurations: [{  // ✅ Fixed property name
+    frontendIPConfigurations: [{
         name: frontendIpConfigurationName,
         publicIPAddress: { id: publicIp.id },
     }],
@@ -59,7 +59,7 @@ const appGateway = new azure.network.ApplicationGateway("app-gateway-s5", {
     backendAddressPools: [{
         name: backendAddressPoolName,
     }],
-    backendHttpSettingsCollection: [{  // ✅ Fixed property name
+    backendHttpSettingsCollection: [{
         name: httpSettingName,
         cookieBasedAffinity: "Disabled",
         path: "/",
@@ -68,18 +68,28 @@ const appGateway = new azure.network.ApplicationGateway("app-gateway-s5", {
         requestTimeout: 60,
     }],
     httpListeners: [{
-    name: listenerName,
-    frontendIPConfiguration: { id: pulumi.interpolate`${appGateway.id}/frontendIPConfigurations/${frontendIpConfigurationName}` }, // ✅ Fixed
-    frontendPort: { id: pulumi.interpolate`${appGateway.id}/frontendPorts/${frontendPortName}` },  // ✅ Fixed
-    protocol: "Http",
+        name: listenerName,
+        frontendIPConfiguration: pulumi.output(appGateway.id).apply(id => ({
+            id: `${id}/frontendIPConfigurations/${frontendIpConfigurationName}`
+        })),
+        frontendPort: pulumi.output(appGateway.id).apply(id => ({
+            id: `${id}/frontendPorts/${frontendPortName}`
+        })),
+        protocol: "Http",
     }],
     requestRoutingRules: [{
-    name: requestRoutingRuleName,
-    priority: 1,
-    ruleType: "Basic",
-    httpListener: { id: pulumi.interpolate`${appGateway.id}/httpListeners/${listenerName}` },  // ✅ Fixed
-    backendAddressPool: { id: pulumi.interpolate`${appGateway.id}/backendAddressPools/${backendAddressPoolName}` },  // ✅ Fixed
-    backendHttpSettings: { id: pulumi.interpolate`${appGateway.id}/backendHttpSettingsCollection/${httpSettingName}` },  // ✅ Fixed
+        name: requestRoutingRuleName,
+        priority: 1,
+        ruleType: "Basic",
+        httpListener: pulumi.output(appGateway.id).apply(id => ({
+            id: `${id}/httpListeners/${listenerName}`
+        })),
+        backendAddressPool: pulumi.output(appGateway.id).apply(id => ({
+            id: `${id}/backendAddressPools/${backendAddressPoolName}`
+        })),
+        backendHttpSettings: pulumi.output(appGateway.id).apply(id => ({
+            id: `${id}/backendHttpSettingsCollection/${httpSettingName}`
+        })),
     }],
     webApplicationFirewallConfiguration: {
         enabled: true,
@@ -88,6 +98,7 @@ const appGateway = new azure.network.ApplicationGateway("app-gateway-s5", {
         ruleSetVersion: "3.2",
     },
 });
+
 
 // ✅ Ensure references are correctly created AFTER appGateway is defined
 const httpListener = pulumi.interpolate`${appGateway.id}/httpListeners/${listenerName}`;
