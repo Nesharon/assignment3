@@ -115,19 +115,21 @@ const appGateway = new azure.network.ApplicationGateway("app-gateway-s5", {
         requestTimeout: 60,
     }],
     httpListeners: [{
-        name: listenerName,
-        frontendIpConfigurationName: frontendIpConfigurationName,
-        frontendPortName: frontendPortName,
-        protocol: "Http",
+    name: listenerName,
+    frontendIPConfiguration: { id: pulumi.interpolate`${appGateway.id}/frontendIPConfigurations/${frontendIpConfigurationName}` },  // ✅ Corrected
+    frontendPort: { id: pulumi.interpolate`${appGateway.id}/frontendPorts/${frontendPortName}` },  // ✅ Corrected
+    protocol: "Http",
     }],
+
     requestRoutingRules: [{
-        name: requestRoutingRuleName,
-        priority: 1,
-        ruleType: "Basic",
-        httpListenerName: listenerName,
-        backendAddressPoolName: backendAddressPoolName,
-        backendHttpSettingsName: httpSettingName,
+    name: requestRoutingRuleName,
+    priority: 1,
+    ruleType: "Basic",
+    httpListener: { id: pulumi.interpolate`${appGateway.id}/httpListeners/${listenerName}` },  // ✅ Corrected
+    backendAddressPool: { id: pulumi.interpolate`${appGateway.id}/backendAddressPools/${backendAddressPoolName}` },  // ✅ Corrected
+    backendHttpSettings: { id: pulumi.interpolate`${appGateway.id}/backendHttpSettings/${httpSettingName}` },  // ✅ Corrected
     }],
+
     webApplicationFirewallConfiguration: {
         enabled: true,
         firewallMode: "Prevention",
