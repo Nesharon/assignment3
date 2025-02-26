@@ -11,13 +11,13 @@ const resourceGroup = new azure.resources.ResourceGroup("aks-rg", {
 const vnet = new azure.network.VirtualNetwork("aks-vnet", {
     resourceGroupName: resourceGroup.name,
     location: resourceGroup.location,
-    addressSpace: { addressPrefixes: ["10.1.0.0/16"] },
+    addressSpace: { addressPrefixes: ["10.0.0.0/16"] },
 });
 
 const subnet = new azure.network.Subnet("aks-subnet", {
     resourceGroupName: resourceGroup.name,
     virtualNetworkName: vnet.name,
-    addressPrefix: "10.1.1.0/24",
+    addressPrefix: "10.0.1.0/24",
 });
 
 // Create a Public IP for Application Gateway
