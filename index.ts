@@ -31,7 +31,7 @@ const publicIp = new azure.network.PublicIPAddress("appgw-public-ip", {
 // Create the AKS Cluster
 const aksCluster = new azure.containerservice.ManagedCluster("myAksCluster", {
     resourceGroupName: resourceGroup.name,
-    location: region,
+    location: resourceGroup.location,
     kubernetesVersion: "1.21.2", // Choose the desired Kubernetes version
     dnsPrefix: "akscluster",
     agentPoolProfiles: [{
