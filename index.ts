@@ -153,7 +153,7 @@ const appGateway = new azure.network.ApplicationGateway("AppGateway", {
     location: resourceGroup.location,
     sku: {
         name: "WAF_v2",
-        tier: "WAF",
+        tier: "WAF_v2",
     },
     firewallPolicy: {
         id: wafPolicy.id,  // ✅ Attach the WAF Policy here
