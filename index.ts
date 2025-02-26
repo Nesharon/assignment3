@@ -28,6 +28,27 @@ const publicIp = new azure.network.PublicIPAddress("appgw-public-ip", {
     publicIPAllocationMethod: "Static",
 });
 
+// Create the AKS Cluster
+const aksCluster = new azure.containerservice.ManagedCluster("myAksCluster", {
+    resourceGroupName: resourceGroup.name,
+    location: region,
+    kubernetesVersion: "1.21.2", // Choose the desired Kubernetes version
+    dnsPrefix: "akscluster",
+    agentPoolProfiles: [{
+        name: "default",
+        count: 3,
+        vmSize: "Standard_DS2_v2",
+        osType: "Linux",
+    }],
+    enableRBAC: true,
+    networkProfile: {
+        networkPlugin: "azure", // Use Azure CNI networking
+        networkPolicy: "calico", // You can choose the policy like calico for network security
+    },
+    identity: {
+        type: "SystemAssigned", // AKS system-assigned identity
+    },
+});
 
 
 // const backendAddressPoolName = "appgw-beap";
