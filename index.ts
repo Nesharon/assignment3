@@ -130,15 +130,15 @@ const aksCluster = new azure.containerservice.ManagedCluster("aks-cluster", {
         networkPlugin: "azure",
         serviceCidr: "10.4.0.0/16",
     },
-    addonProfiles: {
-        ingressApplicationGateway: {
-            enabled: true,
-            config: {
-                applicationGatewayId: appGateway.id,
-            },
-        },
-    },
-}, });
+    // addonProfiles: {
+    //     ingressApplicationGateway: {
+    //         enabled: true,
+    //         config: {
+    //             applicationGatewayId: appGateway.id,
+    //         },
+    //     },
+    // },
+});
 // { dependsOn: [appGateway] });
 
 // Get AKS credentials
