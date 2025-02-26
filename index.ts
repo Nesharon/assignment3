@@ -41,7 +41,7 @@ const wafPolicy = new azure.network.WebApplicationFirewallPolicy("wafPolicy", {
     },
 });
 
-// 1️⃣ Create the Application Gateway **WITHOUT** self-referencing ID
+// 1️⃣ Create the Application Gateway
 const appGateway = new azure.network.ApplicationGateway("AppGateway", {
     resourceGroupName: resourceGroup.name,
     location: resourceGroup.location,
@@ -49,9 +49,7 @@ const appGateway = new azure.network.ApplicationGateway("AppGateway", {
         name: "WAF_v2",
         tier: "WAF_v2",
     },
-    firewallPolicy: {
-        id: wafPolicy.id,
-    },
+    firewallPolicy: { id: wafPolicy.id },
     gatewayIPConfigurations: [{
         name: "appGwIpConfig",
         subnet: { id: subnet.id },
@@ -73,30 +71,18 @@ const appGateway = new azure.network.ApplicationGateway("AppGateway", {
         port: 80,
         protocol: "Http",
     }],
-});
-
-// 2️⃣ **Create HTTP Listener Separately**
-const httpListener = appGateway.id.apply(id =>
-    new azure.network.ApplicationGatewayHttpListener("AppGwHttpListener", {
-        resourceGroupName: resourceGroup.name,
-        applicationGatewayName: appGateway.name,
+    httpListeners: [{
         name: "httpListener",
-        frontendIPConfiguration: { id: `${id}/frontendIPConfigurations/appGwFrontendIP` },
-        frontendPort: { id: `${id}/frontendPorts/appGwFrontendPort` },
+        frontendIPConfiguration: { id: pulumi.interpolate`${appGateway.id}/frontendIPConfigurations/appGwFrontendIP` },
+        frontendPort: { id: pulumi.interpolate`${appGateway.id}/frontendPorts/appGwFrontendPort` },
         protocol: "Http",
-    })
-);
-
-// 3️⃣ **Create URL Path Map Separately**
-const urlPathMap = appGateway.id.apply(id =>
-    new azure.network.ApplicationGatewayUrlPathMap("AppGwUrlPathMap", {
-        resourceGroupName: resourceGroup.name,
-        applicationGatewayName: appGateway.name,
+    }],
+    urlPathMaps: [{
         name: "urlPathMap",
-        defaultBackendAddressPool: { id: `${id}/backendAddressPools/appGwBackendPool` },
-        defaultBackendHttpSettings: { id: `${id}/backendHttpSettingsCollection/appGwBackendHttpSettings` },
-    })
-);
+        defaultBackendAddressPool: { id: pulumi.interpolate`${appGateway.id}/backendAddressPools/appGwBackendPool` },
+        defaultBackendHttpSettings: { id: pulumi.interpolate`${appGateway.id}/backendHttpSettingsCollection/appGwBackendHttpSettings` },
+    }],
+});
 
 // ✅ Now use the appGateway reference inside the AKS cluster
 const aksCluster = new azure.containerservice.ManagedCluster("aks-cluster", {
