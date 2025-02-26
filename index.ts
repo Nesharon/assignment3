@@ -77,8 +77,8 @@ const appGateway = new azure.network.ApplicationGateway("appGateway", {
     // ✅ Define httpListeners and urlPathMaps **inside** Application Gateway
     httpListeners: [{
         name: httpListenerName,
-        frontendIpConfigurationName: frontendIpConfigurationName,
-        frontendPortName: frontendPortName,
+        frontendIpConfigurationName: { id: `${id}/frontendIPConfigurations/${frontendIpConfigurationName}` }, 
+        frontendPortName: { id: `${id}/frontendPorts/${frontendPortName}` },
         protocol: "Http",     
     }],
     
@@ -86,9 +86,9 @@ const appGateway = new azure.network.ApplicationGateway("appGateway", {
           name: requestRoutingRuleName,
         priority: 9,
         ruleType: "Basic",
-        httpListenerName: httpListenerName,
-        backendAddressPoolName: backendPoolName,
-        backendHttpSettingsName: httpSettingName,
+        httpListener: { id: `${id}/httpListeners/${httpListenerName}` }, // ✅ Fix
+        backendAddressPool: { id: `${id}/backendAddressPools/${backendPoolName}` }, // ✅ Fix
+        backendHttpSettings: { id: `${id}/backendHttpSettingsCollection/${httpSettingName}` }, // ✅ Fix
     }],
 });
 
