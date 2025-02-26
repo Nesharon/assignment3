@@ -41,46 +41,51 @@ const wafPolicy = new azure.network.WebApplicationFirewallPolicy("wafPolicy", {
     },
 });
 
-// 1️⃣ Create the Application Gateway
-const appGateway = new azure.network.ApplicationGateway("AppGateway", {
+const frontendIpConfigName = "appGwFrontendIP";
+const frontendPortName = "appGwFrontendPort";
+const backendPoolName = "appGwBackendPool";
+const backendHttpSettingsName = "appGwBackendHttpSettings";
+const httpListenerName = "httpListener";
+const urlPathMapName = "urlPathMap";
+
+// Define the Application Gateway as a single resource
+const appGateway = new azure.network.ApplicationGateway("appGateway", {
     resourceGroupName: resourceGroup.name,
     location: resourceGroup.location,
-    sku: {
-        name: "WAF_v2",
-        tier: "WAF_v2",
-    },
-    firewallPolicy: { id: wafPolicy.id },
+    sku: { name: "WAF_v2", tier: "WAF_v2" },
+    
     gatewayIPConfigurations: [{
         name: "appGwIpConfig",
         subnet: { id: subnet.id },
     }],
+    
     frontendIPConfigurations: [{
-        name: "appGwFrontendIP",
+        name: frontendIpConfigName,
         publicIPAddress: { id: publicIp.id },
     }],
-    frontendPorts: [{
-        name: "appGwFrontendPort",
-        port: 80,
-    }],
-    backendAddressPools: [{
-        name: "appGwBackendPool",
-        backendAddresses: [{ ipAddress: "10.0.0.1" }],
-    }],
+    
+    frontendPorts: [{ name: frontendPortName, port: 80 }],
+    
+    backendAddressPools: [{ name: backendPoolName }],
+    
     backendHttpSettingsCollection: [{
-        name: "appGwBackendHttpSettings",
+        name: backendHttpSettingsName,
         port: 80,
         protocol: "Http",
     }],
+    
+    // ✅ Define httpListeners and urlPathMaps **inside** Application Gateway
     httpListeners: [{
-        name: "httpListener",
-        frontendIPConfiguration: { id: pulumi.interpolate`${appGateway.id}/frontendIPConfigurations/appGwFrontendIP` },
-        frontendPort: { id: pulumi.interpolate`${appGateway.id}/frontendPorts/appGwFrontendPort` },
+        name: httpListenerName,
+        frontendIPConfiguration: { name: frontendIpConfigName }, // Referencing by name
+        frontendPort: { name: frontendPortName }, // Referencing by name
         protocol: "Http",
     }],
+    
     urlPathMaps: [{
-        name: "urlPathMap",
-        defaultBackendAddressPool: { id: pulumi.interpolate`${appGateway.id}/backendAddressPools/appGwBackendPool` },
-        defaultBackendHttpSettings: { id: pulumi.interpolate`${appGateway.id}/backendHttpSettingsCollection/appGwBackendHttpSettings` },
+        name: urlPathMapName,
+        defaultBackendAddressPool: { name: backendPoolName }, // Referencing by name
+        defaultBackendHttpSettings: { name: backendHttpSettingsName }, // Referencing by name
     }],
 });
 
