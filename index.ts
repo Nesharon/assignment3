@@ -28,29 +28,6 @@ const publicIp = new azure.network.PublicIPAddress("appgw-public-ip", {
     publicIPAllocationMethod: "Static",
 });
 
-// // Create the AKS Cluster
-// const aksCluster = new azure.containerservice.ManagedCluster("myAksCluster", {
-//     resourceGroupName: resourceGroup.name,
-//     location: resourceGroup.location,
-//     kubernetesVersion: "1.21.2", // Choose the desired Kubernetes version
-//     dnsPrefix: "akscluster",
-//     agentPoolProfiles: [{
-//         name: "default",
-//         count: 3,
-//         vmSize: "Standard_DS2_v2",
-//         osType: "Linux",
-//     }],
-//     enableRBAC: true,
-//     networkProfile: {
-//         networkPlugin: "azure", // Use Azure CNI networking
-//         networkPolicy: "calico", // You can choose the policy like calico for network security
-//     },
-//     identity: {
-//         type: "SystemAssigned", // AKS system-assigned identity
-//     },
-// });
-
-
 // const backendAddressPoolName = "appgw-beap";
 // const frontendPortName = "appgw-feport";
 // const frontendIpConfigurationName = "appgw-feip";
@@ -157,5 +134,76 @@ const kubeconfig = creds.apply(c => {
     return Buffer.from(encoded, "base64").toString();
 });
 
-export const kubeconfigSecret = pulumi.secret(kubeconfig);
+// Create a Web Application Firewall Policy
+const wafPolicy = new azure.network.WebApplicationFirewallPolicy("wafPolicy", {
+    resourceGroupName: resourceGroup.name,
+    location: resourceGroup.location,
+    policyName: "example-waf-policy",
+    managedRules: {
+        managedRuleSets: [{
+            ruleSetType: "OWASP",
+            ruleSetVersion: "3.2",
+        }],
+    },
+});
 
+// Create the Application Gateway with WAF
+const appGateway = new azure.network.ApplicationGateway("AppGateway", {
+    resourceGroupName: resourceGroup.name,
+    location: resourceGroup.location,
+    sku: {
+        name: "WAF_v2",
+        tier: "WAF",
+    },
+    gatewayIPConfigurations: [{
+        name: "appGwIpConfig",
+        subnet: {
+            id: "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Network/virtualNetworks/{vnetName}/subnets/{subnetName}",
+        },
+    }],
+    frontendIPConfigurations: [{
+        name: "appGwFrontendIP",
+        publicIPAddress: {
+            id: "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Network/publicIPAddresses/{publicIPName}",
+        },
+    }],
+    frontendPorts: [{
+        name: "appGwFrontendPort",
+        port: 80,
+    }],
+    backendAddressPools: [{
+        name: "appGwBackendPool",
+        backendAddresses: [
+            { ipAddress: "10.0.0.1" }, // Use AKS Node IP addresses or internal load balancer IPs
+        ],
+    }],
+    backendHttpSettingsCollection: [{
+        name: "appGwBackendHttpSettings",
+        port: 80,
+        protocol: "Http",
+    }],
+    httpListeners: [{
+        name: "appGwHttpListener",
+        frontendIPConfiguration: {
+            id: "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Network/applicationGateways/{appGwName}/frontendIPConfigurations/{frontendIPName}",
+        },
+        frontendPort: {
+            id: "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Network/applicationGateways/{appGwName}/frontendPorts/{frontendPortName}",
+        },
+        protocol: "Http",
+    }],
+    urlPathMaps: [{
+        name: "appGwUrlPathMap",
+        defaultBackendAddressPool: {
+            id: "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Network/applicationGateways/{appGwName}/backendAddressPools/{backendPoolName}",
+        },
+        defaultBackendHttpSettings: {
+            id: "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Network/applicationGateways/{appGwName}/backendHttpSettingsCollection/{httpSettingsName}",
+        },
+    }],
+});
+
+
+export const kubeconfigSecret = pulumi.secret(kubeconfig);
+export const aksClusterName = aksCluster.name;
+export const appGatewayPublicIP = publicIP.ipAddress;
