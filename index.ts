@@ -2,6 +2,7 @@ import * as pulumi from "@pulumi/pulumi";
 import * as azure from "@pulumi/azure-native";
 import * as k8s from "@pulumi/kubernetes";
 
+
 // Create an Azure Resource Group
 const resourceGroup = new azure.resources.ResourceGroup("aks-rg-s5", {
     location: "uaenorth",
