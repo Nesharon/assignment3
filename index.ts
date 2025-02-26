@@ -41,12 +41,12 @@ const wafPolicy = new azure.network.WebApplicationFirewallPolicy("wafPolicy", {
     },
 });
 
-const frontendIpConfigName = "appGwFrontendIP";
-const frontendPortName = "appGwFrontendPort";
-const backendPoolName = "appGwBackendPool";
-const backendHttpSettingsName = "appGwBackendHttpSettings";
-const httpListenerName = "httpListener";
-const urlPathMapName = "urlPathMap";
+// const frontendIpConfigName = "appGwFrontendIP";
+// const frontendPortName = "appGwFrontendPort";
+// const backendPoolName = "appGwBackendPool";
+// const backendHttpSettingsName = "appGwBackendHttpSettings";
+// const httpListenerName = "httpListener";
+// const urlPathMapName = "urlPathMap";
 
 // Define the Application Gateway as a single resource
 const appGateway = new azure.network.ApplicationGateway("appGateway", {
@@ -76,16 +76,19 @@ const appGateway = new azure.network.ApplicationGateway("appGateway", {
     
     // ✅ Define httpListeners and urlPathMaps **inside** Application Gateway
     httpListeners: [{
-        name: httpListenerName,
-        frontendIPConfiguration: { name: frontendIpConfigName }, // Referencing by name
-        frontendPort: { name: frontendPortName }, // Referencing by name
-        protocol: "Http",
+        name: listenerName,
+        frontendIpConfigurationName: frontendIpConfigurationName,
+        frontendPortName: frontendPortName,
+        protocol: "Http",     
     }],
     
     urlPathMaps: [{
-        name: urlPathMapName,
-        defaultBackendAddressPool: { name: backendPoolName }, // Referencing by name
-        defaultBackendHttpSettings: { name: backendHttpSettingsName }, // Referencing by name
+          name: requestRoutingRuleName,
+        priority: 9,
+        ruleType: "Basic",
+        httpListenerName: listenerName,
+        backendAddressPoolName: backendAddressPoolName,
+        backendHttpSettingsName: httpSettingName,
     }],
 });
 
