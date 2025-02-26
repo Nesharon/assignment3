@@ -18,7 +18,7 @@ const subnet = new azure.network.Subnet("aks-subnet", {
     resourceGroupName: resourceGroup.name,
     virtualNetworkName: vnet.name,
     addressPrefix: "10.1.1.0/24",
-}, { ignoreChanges: ["subnet"] });
+});
 
 // Create a Public IP for Application Gateway
 const publicIp = new azure.network.PublicIPAddress("appgw-public-ip", {
@@ -41,7 +41,7 @@ const wafPolicy = new azure.network.WebApplicationFirewallPolicy("wafPolicy", {
     },
 });
 
-// Create the Application Gateway with WAF
+// ✅ Move App Gateway Definition Before Using It
 const appGateway = new azure.network.ApplicationGateway("AppGateway", {
     resourceGroupName: resourceGroup.name,
     location: resourceGroup.location,
@@ -71,7 +71,7 @@ const appGateway = new azure.network.ApplicationGateway("AppGateway", {
     backendAddressPools: [{
         name: "appGwBackendPool",
         backendAddresses: [
-            { ipAddress: "10.0.0.1" }, 
+            { ipAddress: "10.0.0.1" },
         ],
     }],
     backendHttpSettingsCollection: [{
@@ -100,7 +100,7 @@ const appGateway = new azure.network.ApplicationGateway("AppGateway", {
     }],
 });
 
-// Create an AKS Cluster with Application Gateway Ingress Controller
+// ✅ Now use the appGateway reference inside the AKS cluster
 const aksCluster = new azure.containerservice.ManagedCluster("aks-cluster", {
     resourceGroupName: resourceGroup.name,
     location: resourceGroup.location,
@@ -145,7 +145,7 @@ const kubeconfig = creds.apply(c => {
     return Buffer.from(encoded, "base64").toString();
 });
 
-// Exports
+// ✅ Export Statements After Everything is Defined
 export const kubeconfigSecret = pulumi.secret(kubeconfig);
 export const aksClusterName = aksCluster.name;
 export const frontendPortId = pulumi.output(appGateway.frontendPorts[0].id);
