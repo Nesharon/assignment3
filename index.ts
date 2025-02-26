@@ -18,7 +18,7 @@ const subnet = new azure.network.Subnet("aks-subnet", {
     resourceGroupName: resourceGroup.name,
     virtualNetworkName: vnet.name,
     addressPrefix: "10.1.1.0/24",
-});
+}, { ignoreChanges: ["subnet"] });
 
 // Create a Public IP for Application Gateway
 const publicIp = new azure.network.PublicIPAddress("appgw-public-ip", {
@@ -155,16 +155,19 @@ const appGateway = new azure.network.ApplicationGateway("AppGateway", {
         name: "WAF_v2",
         tier: "WAF",
     },
+    firewallPolicy: {
+        id: wafPolicy.id,  // ✅ Attach the WAF Policy here
+    },
     gatewayIPConfigurations: [{
         name: "appGwIpConfig",
         subnet: {
-            id: "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Network/virtualNetworks/{vnetName}/subnets/{subnetName}",
+            id: subnet.id,
         },
     }],
     frontendIPConfigurations: [{
         name: "appGwFrontendIP",
         publicIPAddress: {
-            id: "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Network/publicIPAddresses/{publicIPName}",
+            id: publicIp.id,
         },
     }],
     frontendPorts: [{
