@@ -206,4 +206,4 @@ const appGateway = new azure.network.ApplicationGateway("AppGateway", {
 
 export const kubeconfigSecret = pulumi.secret(kubeconfig);
 export const aksClusterName = aksCluster.name;
-export const appGatewayPublicIP = publicIP.ipAddress;
+// export const appGatewayPublicIP = publicIP.ipAddress;
