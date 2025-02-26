@@ -2,7 +2,6 @@ import * as pulumi from "@pulumi/pulumi";
 import * as azure from "@pulumi/azure-native";
 import * as k8s from "@pulumi/kubernetes";
 
-
 // Create an Azure Resource Group
 const resourceGroup = new azure.resources.ResourceGroup("aks-rg-s5", {
     location: "uaenorth",
@@ -29,52 +28,6 @@ const publicIp = new azure.network.PublicIPAddress("appgw-public-ip", {
     publicIPAllocationMethod: "Static",
 });
 
-// Create an AKS Cluster with Application Gateway Ingress Controller
-const aksCluster = new azure.containerservice.ManagedCluster("aks-cluster", {
-    resourceGroupName: resourceGroup.name,
-    location: resourceGroup.location,
-    dnsPrefix: "myaks",
-    agentPoolProfiles: [{
-        name: "agentpool",
-        count: 2,
-        vmSize: "Standard_D2_v2",
-        vnetSubnetID: subnet.id,
-        osType: "Linux",
-        mode: "System",
-    }],
-    enableRBAC: true,
-    identity: { type: "SystemAssigned" },
-    networkProfile: {
-        networkPlugin: "azure",
-        serviceCidr: "10.0.0.0/16",
-    },
-    // addonProfiles: {
-    //     ingressApplicationGateway: {
-    //         enabled: true,
-    //         config: {
-    //             applicationGatewayId: appGateway.id,
-    //         },
-    //     },
-    // },
-});
-// { dependsOn: [appGateway] });
-
-// Get AKS credentials
-const creds = pulumi
-    .all([resourceGroup.name, aksCluster.name])
-    .apply(([rgName, aksName]) =>
-        azure.containerservice.listManagedClusterUserCredentials({
-            resourceGroupName: rgName,
-            resourceName: aksName,
-        })
-    );
-
-// Export kubeconfig for kubectl access
-const kubeconfig = creds.apply(c => {
-    const encoded = c.kubeconfigs?.[0]?.value || "";
-    return Buffer.from(encoded, "base64").toString();
-});
-
 // Create a Web Application Firewall Policy
 const wafPolicy = new azure.network.WebApplicationFirewallPolicy("wafPolicy", {
     resourceGroupName: resourceGroup.name,
@@ -97,7 +50,7 @@ const appGateway = new azure.network.ApplicationGateway("AppGateway", {
         tier: "WAF_v2",
     },
     firewallPolicy: {
-        id: wafPolicy.id,  // ✅ Attach the WAF Policy here
+        id: wafPolicy.id,
     },
     gatewayIPConfigurations: [{
         name: "appGwIpConfig",
@@ -118,7 +71,7 @@ const appGateway = new azure.network.ApplicationGateway("AppGateway", {
     backendAddressPools: [{
         name: "appGwBackendPool",
         backendAddresses: [
-            { ipAddress: "10.0.0.1" }, // Use AKS Node IP addresses or internal load balancer IPs
+            { ipAddress: "10.0.0.1" }, 
         ],
     }],
     backendHttpSettingsCollection: [{
@@ -127,28 +80,73 @@ const appGateway = new azure.network.ApplicationGateway("AppGateway", {
         protocol: "Http",
     }],
     httpListeners: [{
-    name: "appGwHttpListener",
-    frontendIPConfiguration: appGateway.id.apply(id => ({
-        id: `${id}/frontendIPConfigurations/appGwFrontendIP`,
-    })),
-    frontendPort: appGateway.id.apply(id => ({
-        id: `${id}/frontendPorts/appGwFrontendPort`,
-    })),
-    protocol: "Http",
+        name: "appGwHttpListener",
+        frontendIPConfiguration: pulumi.output(appGateway.id).apply(id => ({
+            id: `${id}/frontendIPConfigurations/appGwFrontendIP`,
+        })),
+        frontendPort: pulumi.output(appGateway.id).apply(id => ({
+            id: `${id}/frontendPorts/appGwFrontendPort`,
+        })),
+        protocol: "Http",
     }],
     urlPathMaps: [{
-    name: "appGwUrlPathMap",
-    defaultBackendAddressPool: appGateway.id.apply(id => ({
-        id: `${id}/backendAddressPools/appGwBackendPool`,
-    })),
-    defaultBackendHttpSettings: appGateway.id.apply(id => ({
-        id: `${id}/backendHttpSettingsCollection/appGwBackendHttpSettings`,
-    })),
+        name: "appGwUrlPathMap",
+        defaultBackendAddressPool: pulumi.output(appGateway.id).apply(id => ({
+            id: `${id}/backendAddressPools/appGwBackendPool`,
+        })),
+        defaultBackendHttpSettings: pulumi.output(appGateway.id).apply(id => ({
+            id: `${id}/backendHttpSettingsCollection/appGwBackendHttpSettings`,
+        })),
     }],
+});
 
+// Create an AKS Cluster with Application Gateway Ingress Controller
+const aksCluster = new azure.containerservice.ManagedCluster("aks-cluster", {
+    resourceGroupName: resourceGroup.name,
+    location: resourceGroup.location,
+    dnsPrefix: "myaks",
+    agentPoolProfiles: [{
+        name: "agentpool",
+        count: 2,
+        vmSize: "Standard_D2_v2",
+        vnetSubnetID: subnet.id,
+        osType: "Linux",
+        mode: "System",
+    }],
+    enableRBAC: true,
+    identity: { type: "SystemAssigned" },
+    networkProfile: {
+        networkPlugin: "azure",
+        serviceCidr: "10.0.0.0/16",
+    },
+    addonProfiles: {
+        ingressApplicationGateway: {
+            enabled: true,
+            config: {
+                applicationGatewayId: appGateway.id,
+            },
+        },
+    },
+}, { dependsOn: [appGateway] });
 
+// Get AKS credentials
+const creds = pulumi
+    .all([resourceGroup.name, aksCluster.name])
+    .apply(([rgName, aksName]) =>
+        azure.containerservice.listManagedClusterUserCredentials({
+            resourceGroupName: rgName,
+            resourceName: aksName,
+        })
+    );
+
+// Export kubeconfig for kubectl access
+const kubeconfig = creds.apply(c => {
+    const encoded = c.kubeconfigs?.[0]?.value || "";
+    return Buffer.from(encoded, "base64").toString();
+});
+
+// Exports
 export const kubeconfigSecret = pulumi.secret(kubeconfig);
 export const aksClusterName = aksCluster.name;
-// export const appGatewayPublicIP = publicIP.ipAddress;
-export const frontendPortId = appGateway.frontendPorts[0].id;
-export const frontendIpConfigId = appGateway.frontendIPConfigurations[0].id;
+export const frontendPortId = pulumi.output(appGateway.frontendPorts[0].id);
+export const frontendIpConfigId = pulumi.output(appGateway.frontendIPConfigurations[0].id);
