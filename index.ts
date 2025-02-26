@@ -41,12 +41,12 @@ const wafPolicy = new azure.network.WebApplicationFirewallPolicy("wafPolicy", {
     },
 });
 
-// const frontendIpConfigName = "appGwFrontendIP";
-// const frontendPortName = "appGwFrontendPort";
-// const backendPoolName = "appGwBackendPool";
-// const backendHttpSettingsName = "appGwBackendHttpSettings";
-// const httpListenerName = "httpListener";
-// const urlPathMapName = "urlPathMap";
+const frontendIpConfigName = "appGwFrontendIP";
+const frontendPortName = "appGwFrontendPort";
+const backendPoolName = "appGwBackendPool";
+const backendHttpSettingsName = "appGwBackendHttpSettings";
+const httpListenerName = "httpListener";
+const urlPathMapName = "urlPathMap";
 
 // Define the Application Gateway as a single resource
 const appGateway = new azure.network.ApplicationGateway("appGateway", {
