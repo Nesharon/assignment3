@@ -29,66 +29,6 @@ const publicIp = new azure.network.PublicIPAddress("appgw-public-ip", {
     publicIPAllocationMethod: "Static",
 });
 
-// const backendAddressPoolName = "appgw-beap";
-// const frontendPortName = "appgw-feport";
-// const frontendIpConfigurationName = "appgw-feip";
-// const httpSettingName = "appgw-be-htst";
-// const listenerName = "appgw-httplstn";
-// const requestRoutingRuleName = "appgw-rqrt";
-// const httpListeners = "appw-httpl"
-
-// // Create an Application Gateway
-// const appGateway = new azure.network.ApplicationGateway("app-gateway", {
-//     resourceGroupName: resourceGroup.name,
-//     location: resourceGroup.location,
-//     sku: {
-//         name: "WAF_v2",
-//         tier: "WAF_v2",
-//         capacity: 2,
-//     },
-//     gatewayIPConfigurations: [{
-//         name: "appGatewayIpConfig",
-//         subnet: { id: subnet.id },
-//     }],
-//     frontendIPConfigurations: [{
-//         name: "appgw-feip",
-//         publicIPAddress: { id: publicIp.id },
-//     }],
-//     frontendPorts: [{
-//         name: "appgw-feport",
-//         port: 80,
-//     }],
-//     backendAddressPools: [{
-//         name: "appgw-beap",
-//     }],
-//     backendHttpSettingsCollection: [{
-//         name: "appgw-be-htst",
-//         port: 80,
-//         protocol: "Http",
-//         requestTimeout: 60,
-//     }],
-//     httpListeners: [{
-//         name: "appgw-httplstn",
-//         frontendIPConfiguration: { id: pulumi.interpolate`${appGateway.id}/frontendIPConfigurations/appgw-feip` },
-//         frontendPort: { id: pulumi.interpolate`${appGateway.id}/frontendPorts/appgw-feport` },
-//         protocol: "Http",
-//     }],
-//     requestRoutingRules: [{
-//         name: "appgw-rqrt",
-//         priority: 1,
-//         ruleType: "Basic",
-//         httpListener: { id: pulumi.interpolate`${appGateway.id}/httpListeners/appgw-httplstn` },
-//         backendAddressPool: { id: pulumi.interpolate`${appGateway.id}/backendAddressPools/appgw-beap` },
-//         backendHttpSettings: { id: pulumi.interpolate`${appGateway.id}/backendHttpSettingsCollection/appgw-be-htst` },
-//     }],
-//     webApplicationFirewallConfiguration: {
-//         enabled: true,
-//         firewallMode: "Prevention",
-//         ruleSetType: "OWASP",
-//         ruleSetVersion: "3.2",
-//     },
-// });
-
 // Create an AKS Cluster with Application Gateway Ingress Controller
 const aksCluster = new azure.containerservice.ManagedCluster("aks-cluster", {
     resourceGroupName: resourceGroup.name,
@@ -189,20 +129,20 @@ const appGateway = new azure.network.ApplicationGateway("AppGateway", {
     httpListeners: [{
         name: "appGwHttpListener",
         frontendIPConfiguration: {
-            id: "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Network/applicationGateways/{appGwName}/frontendIPConfigurations/{frontendIPName}",
+            id: appGateway.frontendIPConfigurations[0].id,
         },
         frontendPort: {
-            id: "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Network/applicationGateways/{appGwName}/frontendPorts/{frontendPortName}",
+            id: appGateway.frontendPorts[0].id,
         },
         protocol: "Http",
     }],
     urlPathMaps: [{
         name: "appGwUrlPathMap",
         defaultBackendAddressPool: {
-            id: "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Network/applicationGateways/{appGwName}/backendAddressPools/{backendPoolName}",
+            id: appGateway.backendAddressPools[0].id,
         },
         defaultBackendHttpSettings: {
-            id: "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Network/applicationGateways/{appGwName}/backendHttpSettingsCollection/{httpSettingsName}",
+            id: appGateway.backendHttpSettingsCollection[0].id,
         },
     }],
 });
@@ -211,3 +151,5 @@ const appGateway = new azure.network.ApplicationGateway("AppGateway", {
 export const kubeconfigSecret = pulumi.secret(kubeconfig);
 export const aksClusterName = aksCluster.name;
 // export const appGatewayPublicIP = publicIP.ipAddress;
+export const frontendPortId = appGateway.frontendPorts[0].id;
+export const frontendIpConfigId = appGateway.frontendIPConfigurations[0].id;
