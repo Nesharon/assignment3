@@ -28,27 +28,27 @@ const publicIp = new azure.network.PublicIPAddress("appgw-public-ip", {
     publicIPAllocationMethod: "Static",
 });
 
-// Create the AKS Cluster
-const aksCluster = new azure.containerservice.ManagedCluster("myAksCluster", {
-    resourceGroupName: resourceGroup.name,
-    location: resourceGroup.location,
-    kubernetesVersion: "1.21.2", // Choose the desired Kubernetes version
-    dnsPrefix: "akscluster",
-    agentPoolProfiles: [{
-        name: "default",
-        count: 3,
-        vmSize: "Standard_DS2_v2",
-        osType: "Linux",
-    }],
-    enableRBAC: true,
-    networkProfile: {
-        networkPlugin: "azure", // Use Azure CNI networking
-        networkPolicy: "calico", // You can choose the policy like calico for network security
-    },
-    identity: {
-        type: "SystemAssigned", // AKS system-assigned identity
-    },
-});
+// // Create the AKS Cluster
+// const aksCluster = new azure.containerservice.ManagedCluster("myAksCluster", {
+//     resourceGroupName: resourceGroup.name,
+//     location: resourceGroup.location,
+//     kubernetesVersion: "1.21.2", // Choose the desired Kubernetes version
+//     dnsPrefix: "akscluster",
+//     agentPoolProfiles: [{
+//         name: "default",
+//         count: 3,
+//         vmSize: "Standard_DS2_v2",
+//         osType: "Linux",
+//     }],
+//     enableRBAC: true,
+//     networkProfile: {
+//         networkPlugin: "azure", // Use Azure CNI networking
+//         networkPolicy: "calico", // You can choose the policy like calico for network security
+//     },
+//     identity: {
+//         type: "SystemAssigned", // AKS system-assigned identity
+//     },
+// });
 
 
 // const backendAddressPoolName = "appgw-beap";
@@ -111,50 +111,51 @@ const aksCluster = new azure.containerservice.ManagedCluster("myAksCluster", {
 //     },
 // });
 
-// // Create an AKS Cluster with Application Gateway Ingress Controller
-// const aksCluster = new azure.containerservice.ManagedCluster("aks-cluster", {
-//     resourceGroupName: resourceGroup.name,
-//     location: resourceGroup.location,
-//     dnsPrefix: "myaks",
-//     agentPoolProfiles: [{
-//         name: "agentpool",
-//         count: 2,
-//         vmSize: "Standard_D2_v2",
-//         vnetSubnetID: subnet.id,
-//         osType: "Linux",
-//         mode: "System",
-//     }],
-//     enableRBAC: true,
-//     identity: { type: "SystemAssigned" },
-//     networkProfile: {
-//         networkPlugin: "azure",
-//         serviceCidr: "10.4.0.0/16",
-//     },
-//     addonProfiles: {
-//         ingressApplicationGateway: {
-//             enabled: true,
-//             config: {
-//                 applicationGatewayId: appGateway.id,
-//             },
-//         },
-//     },
-// }, { dependsOn: [appGateway] });
+// Create an AKS Cluster with Application Gateway Ingress Controller
+const aksCluster = new azure.containerservice.ManagedCluster("aks-cluster", {
+    resourceGroupName: resourceGroup.name,
+    location: resourceGroup.location,
+    dnsPrefix: "myaks",
+    agentPoolProfiles: [{
+        name: "agentpool",
+        count: 2,
+        vmSize: "Standard_D2_v2",
+        vnetSubnetID: subnet.id,
+        osType: "Linux",
+        mode: "System",
+    }],
+    enableRBAC: true,
+    identity: { type: "SystemAssigned" },
+    networkProfile: {
+        networkPlugin: "azure",
+        serviceCidr: "10.4.0.0/16",
+    },
+    addonProfiles: {
+        ingressApplicationGateway: {
+            enabled: true,
+            config: {
+                applicationGatewayId: appGateway.id,
+            },
+        },
+    },
+}, });
+// { dependsOn: [appGateway] });
 
-// // Get AKS credentials
-// const creds = pulumi
-//     .all([resourceGroup.name, aksCluster.name])
-//     .apply(([rgName, aksName]) =>
-//         azure.containerservice.listManagedClusterUserCredentials({
-//             resourceGroupName: rgName,
-//             resourceName: aksName,
-//         })
-//     );
+// Get AKS credentials
+const creds = pulumi
+    .all([resourceGroup.name, aksCluster.name])
+    .apply(([rgName, aksName]) =>
+        azure.containerservice.listManagedClusterUserCredentials({
+            resourceGroupName: rgName,
+            resourceName: aksName,
+        })
+    );
 
-// // Export kubeconfig for kubectl access
-// const kubeconfig = creds.apply(c => {
-//     const encoded = c.kubeconfigs?.[0]?.value || "";
-//     return Buffer.from(encoded, "base64").toString();
-// });
+// Export kubeconfig for kubectl access
+const kubeconfig = creds.apply(c => {
+    const encoded = c.kubeconfigs?.[0]?.value || "";
+    return Buffer.from(encoded, "base64").toString();
+});
 
-// export const kubeconfigSecret = pulumi.secret(kubeconfig);
+export const kubeconfigSecret = pulumi.secret(kubeconfig);
 
