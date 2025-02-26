@@ -127,25 +127,24 @@ const appGateway = new azure.network.ApplicationGateway("AppGateway", {
         protocol: "Http",
     }],
     httpListeners: [{
-        name: "appGwHttpListener",
-        frontendIPConfiguration: {
-            id: appGateway.frontendIPConfigurations[0].id,
-        },
-        frontendPort: {
-            id: appGateway.frontendPorts[0].id,
-        },
-        protocol: "Http",
+    name: "appGwHttpListener",
+    frontendIPConfiguration: appGateway.id.apply(id => ({
+        id: `${id}/frontendIPConfigurations/appGwFrontendIP`,
+    })),
+    frontendPort: appGateway.id.apply(id => ({
+        id: `${id}/frontendPorts/appGwFrontendPort`,
+    })),
+    protocol: "Http",
     }],
     urlPathMaps: [{
-        name: "appGwUrlPathMap",
-        defaultBackendAddressPool: {
-            id: appGateway.backendAddressPools[0].id,
-        },
-        defaultBackendHttpSettings: {
-            id: appGateway.backendHttpSettingsCollection[0].id,
-        },
+    name: "appGwUrlPathMap",
+    defaultBackendAddressPool: appGateway.id.apply(id => ({
+        id: `${id}/backendAddressPools/appGwBackendPool`,
+    })),
+    defaultBackendHttpSettings: appGateway.id.apply(id => ({
+        id: `${id}/backendHttpSettingsCollection/appGwBackendHttpSettings`,
+    })),
     }],
-});
 
 
 export const kubeconfigSecret = pulumi.secret(kubeconfig);
