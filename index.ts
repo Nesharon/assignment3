@@ -116,7 +116,6 @@ const aksCluster = new azure.containerservice.KubernetesCluster("aks-cluster", {
         serviceCidr: "10.0.0.0/16",
     },
     ingressApplicationGateway: {
-        enabled: true,
         gatewayId: appGateway.id,
     },
 }, { dependsOn: [appGateway] });
@@ -125,13 +124,13 @@ const aksCluster = new azure.containerservice.KubernetesCluster("aks-cluster", {
 const creds = pulumi
     .all([resourceGroup.name, aksCluster.name])
     .apply(([rgName, aksName]) =>
-        azure.containerservice.getKubernetesClusterCredentials({
+        azure.containerservice.getKubeConfig({
             resourceGroupName: rgName,
-            name: aksName,
+            kubernetesClusterName: aksName,
         })
     );
 
-const kubeconfig = creds.apply(c => Buffer.from(c.kubeconfigs[0].value, "base64").toString());
+const kubeconfig = creds.apply(c => Buffer.from(c.kubeConfig, "base64").toString());
 
 // Exports
 export const kubeconfigSecret = pulumi.secret(kubeconfig);
