@@ -1,60 +1,37 @@
 import * as pulumi from "@pulumi/pulumi";
-import * as azure from "@pulumi/azure-native";
+import * as azure from "@pulumi/azure";
 
-// Config
+// Configuration
 const config = new pulumi.Config();
-const resourceGroupName = config.require("resourceGroupName");
 const location = config.get("location") || "East US";
 
 // Resource Group
-const resourceGroup = new azure.resources.ResourceGroup("appGwRG", {
-    resourceGroupName: resourceGroupName,
+const resourceGroup = new azure.core.ResourceGroup("appGwResourceGroup", {
     location: location,
 });
 
 // Virtual Network
-const virtualNetwork = new azure.network.VirtualNetwork("appGwVnet", {
+const virtualNetwork = new azure.network.VirtualNetwork("appGwVNet", {
     resourceGroupName: resourceGroup.name,
     location: resourceGroup.location,
-    addressSpace: {
-        addressPrefixes: ["10.0.0.0/16"],
-    },
+    addressSpaces: ["10.0.0.0/16"],
 });
 
 // Subnet for Application Gateway
 const subnet = new azure.network.Subnet("appGwSubnet", {
     resourceGroupName: resourceGroup.name,
     virtualNetworkName: virtualNetwork.name,
-    addressPrefix: "10.0.1.0/24",
+    addressPrefixes: ["10.0.2.0/24"],
 });
 
-// Public IP for App Gateway
-const publicIp = new azure.network.PublicIPAddress("appGwPublicIp", {
+// Public IP
+const publicIp = new azure.network.PublicIp("appGwPublicIP", {
     resourceGroupName: resourceGroup.name,
     location: resourceGroup.location,
-    publicIPAllocationMethod: "Dynamic",
+    allocationMethod: "Dynamic",
 });
 
-// Frontend Port
-const frontendPort = {
-    name: "appGwFrontendPort",
-    port: 80,
-};
-
-const backendAddressPool = {
-    name: "appGwBackendPool",
-    backendAddresses: [
-        { ipAddress: "10.0.2.4" }, // Replace with your backend IP
-    ],
-};
-
-const backendHttpSettings = {
-    name: "appGwBackendHttpSettings",
-    port: 80,
-    protocol: "Http",
-    requestTimeout: 20,
-};
-
+// Application Gateway
 const appGateway = new azure.network.ApplicationGateway("appGateway", {
     resourceGroupName: resourceGroup.name,
     location: resourceGroup.location,
@@ -75,36 +52,49 @@ const appGateway = new azure.network.ApplicationGateway("appGateway", {
             id: publicIp.id,
         },
     }],
-    frontendPorts: [frontendPort],
-    backendAddressPools: [backendAddressPool],
-    backendHttpSettingsCollection: [backendHttpSettings],
+    frontendPorts: [{
+        name: "httpPort",
+        port: 80,
+    }],
+    backendAddressPools: [{
+        name: "appGwBackendPool",
+        backendAddresses: [{ ipAddress: "10.0.2.4" }],
+    }],
+    backendHttpSettingsCollection: [{
+        name: "httpSettings",
+        port: 80,
+        protocol: "Http",
+        requestTimeout: 20,
+    }],
     httpListeners: [{
-        name: "appGwHttpListener",
+        name: "httpListener",
         frontendIPConfiguration: {
             id: pulumi.interpolate`${appGateway.id}/frontendIPConfigurations/appGwFrontendIPConfig`,
         },
         frontendPort: {
-            id: pulumi.interpolate`${appGateway.id}/frontendPorts/${frontendPort.name}`,
+            id: pulumi.interpolate`${appGateway.id}/frontendPorts/httpPort`,
         },
         protocol: "Http",
     }],
     requestRoutingRules: [{
-        name: "appGwRoutingRule",
+        name: "rule1",
         ruleType: "Basic",
         httpListener: {
-            id: pulumi.interpolate`${appGateway.id}/httpListeners/appGwHttpListener`,
+            id: pulumi.interpolate`${appGateway.id}/httpListeners/httpListener`,
         },
         backendAddressPool: {
-            id: pulumi.interpolate`${appGateway.id}/backendAddressPools/${backendAddressPool.name}`,
+            id: pulumi.interpolate`${appGateway.id}/backendAddressPools/appGwBackendPool`,
         },
         backendHttpSettings: {
-            id: pulumi.interpolate`${appGateway.id}/backendHttpSettingsCollection/${backendHttpSettings.name}`,
+            id: pulumi.interpolate`${appGateway.id}/backendHttpSettingsCollection/httpSettings`,
         },
     }],
 });
 
+// Export Outputs
+export const appGatewayIp = publicIp.ipAddress;
 export const appGatewayId = appGateway.id;
-export const publicIpAddress = publicIp.ipAddress;
+
 
 
 
