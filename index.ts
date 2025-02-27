@@ -32,7 +32,24 @@ const publicIp = new azure.network.PublicIp("appGwPublicIP", {
     allocationMethod: "Dynamic",
 });
 
-// Application Gateway
+// Web Application Firewall Policy
+const wafPolicy = new azure.network.ApplicationGatewayFirewallPolicy("wafPolicy", {
+    resourceGroupName: resourceGroup.name,
+    location: resourceGroup.location,
+    sku: "Standard_v2", // WAF_v2 uses Standard_v2 SKU
+    policySettings: {
+        enabled: true,
+        mode: "Prevention", // Prevention mode blocks attacks
+        requestBodyCheck: true,
+        maxRequestBodySizeInKb: 128,
+    },
+    managedRules: [{
+        type: "OWASP",
+        version: "3.2",
+    }],
+});
+
+// Application Gateway with WAF_v2 SKU
 const appGateway = new azure.network.ApplicationGateway("appGateway", {
     resourceGroupName: resourceGroup.name,
     location: resourceGroup.location,
@@ -41,6 +58,7 @@ const appGateway = new azure.network.ApplicationGateway("appGateway", {
         tier: "WAF_v2",
         capacity: 2,
     },
+    firewallPolicyId: wafPolicy.id, // Attach WAF Policy
     gatewayIpConfigurations: [{
         name: "appGwIPConfig",
         subnetId: subnet.id,
@@ -61,7 +79,7 @@ const appGateway = new azure.network.ApplicationGateway("appGateway", {
         port: 80,
         protocol: "Http",
         requestTimeout: 20,
-        cookieBasedAffinity: "Disabled", // Mandatory Property Added
+        cookieBasedAffinity: "Disabled",
     }],
     httpListeners: [{
         name: "httpListener",
@@ -75,9 +93,14 @@ const appGateway = new azure.network.ApplicationGateway("appGateway", {
         httpListenerName: "httpListener",
         backendAddressPoolName: "appGwBackendPool",
         backendHttpSettingsName: "httpSettings",
-        priority: 100, // 👈 Added Priority (Must be unique and between 1-20000)
+        priority: 100,
     }],
 });
+
+// Export Outputs
+export const appGatewayIp = publicIp.ipAddress;
+export const appGatewayId = appGateway.id;
+
 
 // Export Outputs
 export const appGatewayIp = publicIp.ipAddress;
