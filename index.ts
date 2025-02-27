@@ -38,8 +38,8 @@ const wafPolicy = new azureNative.network.WebApplicationFirewallPolicy("wafPolic
     resourceGroupName: resourceGroup.name,
     location: resourceGroup.location,
     policySettings: {
-        enabled: true,
-        mode: "Prevention", // Blocks requests
+        mode: "Prevention", // Use Prevention mode to block malicious traffic
+        requestBodyCheck: true,
     },
     managedRules: {
         managedRuleSets: [{
