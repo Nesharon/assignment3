@@ -75,13 +75,13 @@ const appGateway = new azure.network.ApplicationGateway("appGateway", {
         httpListenerName: "httpListener",
         backendAddressPoolName: "appGwBackendPool",
         backendHttpSettingsName: "httpSettings",
+        priority: 100, // 👈 Added Priority (Must be unique and between 1-20000)
     }],
 });
 
 // Export Outputs
 export const appGatewayIp = publicIp.ipAddress;
 export const appGatewayId = appGateway.id;
-
 
 // import * as pulumi from "@pulumi/pulumi";
 // import * as azure from "@pulumi/azure-native";
