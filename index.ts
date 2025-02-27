@@ -5,7 +5,7 @@ import * as azureNative from "@pulumi/azure-native";
 
 // Configuration
 const config = new pulumi.Config();
-const location = config.get("location") || "East US";
+const location = config.get("location") || "uaenorth";
 
 // Resource Group
 const resourceGroup = new azure.core.ResourceGroup("appGwResourceGroup", {
@@ -19,7 +19,7 @@ const virtualNetwork = new azure.network.VirtualNetwork("appGwVNet", {
     addressSpaces: ["10.0.0.0/16"],
 });
 
-// Subnet for Application Gateway
+// Subnet
 const subnet = new azure.network.Subnet("appGwSubnet", {
     resourceGroupName: resourceGroup.name,
     virtualNetworkName: virtualNetwork.name,
@@ -44,15 +44,11 @@ const appGateway = new azure.network.ApplicationGateway("appGateway", {
     },
     gatewayIPConfigurations: [{
         name: "appGwIPConfig",
-        subnet: {
-            id: subnet.id,
-        },
+        subnetId: subnet.id,
     }],
     frontendIPConfigurations: [{
         name: "appGwFrontendIPConfig",
-        publicIPAddress: {
-            id: publicIp.id,
-        },
+        publicIpAddressId: publicIp.id,
     }],
     frontendPorts: [{
         name: "httpPort",
@@ -60,7 +56,6 @@ const appGateway = new azure.network.ApplicationGateway("appGateway", {
     }],
     backendAddressPools: [{
         name: "appGwBackendPool",
-        backendAddresses: [{ ipAddress: "10.0.2.4" }],
     }],
     backendHttpSettingsCollection: [{
         name: "httpSettings",
@@ -70,33 +65,22 @@ const appGateway = new azure.network.ApplicationGateway("appGateway", {
     }],
     httpListeners: [{
         name: "httpListener",
-        frontendIPConfiguration: {
-            id: pulumi.interpolate`${appGateway.id}/frontendIPConfigurations/appGwFrontendIPConfig`,
-        },
-        frontendPort: {
-            id: pulumi.interpolate`${appGateway.id}/frontendPorts/httpPort`,
-        },
+        frontendIpConfigurationName: "appGwFrontendIPConfig",
+        frontendPortName: "httpPort",
         protocol: "Http",
     }],
     requestRoutingRules: [{
         name: "rule1",
         ruleType: "Basic",
-        httpListener: {
-            id: pulumi.interpolate`${appGateway.id}/httpListeners/httpListener`,
-        },
-        backendAddressPool: {
-            id: pulumi.interpolate`${appGateway.id}/backendAddressPools/appGwBackendPool`,
-        },
-        backendHttpSettings: {
-            id: pulumi.interpolate`${appGateway.id}/backendHttpSettingsCollection/httpSettings`,
-        },
+        httpListenerName: "httpListener",
+        backendAddressPoolName: "appGwBackendPool",
+        backendHttpSettingsName: "httpSettings",
     }],
 });
 
 // Export Outputs
 export const appGatewayIp = publicIp.ipAddress;
 export const appGatewayId = appGateway.id;
-
 
 
 
