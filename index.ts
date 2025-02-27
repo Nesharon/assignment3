@@ -124,7 +124,7 @@ const aksCluster = new azure.containerservice.KubernetesCluster("aks-cluster", {
 const creds = pulumi
     .all([resourceGroup.name, aksCluster.name])
     .apply(([rgName, aksName]) =>
-        azure.containerservice.listManagedClusterUserCredentials({
+        azure.containerservice.getKubernetesClusterCredentials({
             resourceGroupName: rgName,
             name: aksName,
         })
