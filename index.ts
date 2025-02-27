@@ -29,27 +29,27 @@ const subnet = new azure.network.Subnet("appGwSubnet", {
 const publicIp = new azure.network.PublicIp("appGwPublicIP", {
     resourceGroupName: resourceGroup.name,
     location: resourceGroup.location,
-    allocationMethod: "Dynamic",
+    allocationMethod: "Static", // Static is mandatory for Standard SKU
+    sku: "Standard", // Required for WAF_v2
 });
 
-// Web Application Firewall Policy
-const wafPolicy = new azure.network.ApplicationGatewayFirewallPolicy("wafPolicy", {
+// WAF Policy
+const wafPolicy = new azureNative.network.ApplicationGatewayWebApplicationFirewallPolicy("wafPolicy", {
     resourceGroupName: resourceGroup.name,
     location: resourceGroup.location,
-    sku: "Standard_v2", // WAF_v2 uses Standard_v2 SKU
     policySettings: {
         enabled: true,
-        mode: "Prevention", // Prevention mode blocks attacks
-        requestBodyCheck: true,
-        maxRequestBodySizeInKb: 128,
+        mode: "Prevention", // Blocks requests
     },
-    managedRules: [{
-        type: "OWASP",
-        version: "3.2",
-    }],
+    managedRules: {
+        managedRuleSets: [{
+            ruleSetType: "OWASP",
+            ruleSetVersion: "3.2",
+        }],
+    },
 });
 
-// Application Gateway with WAF_v2 SKU
+// Application Gateway
 const appGateway = new azure.network.ApplicationGateway("appGateway", {
     resourceGroupName: resourceGroup.name,
     location: resourceGroup.location,
@@ -58,7 +58,7 @@ const appGateway = new azure.network.ApplicationGateway("appGateway", {
         tier: "WAF_v2",
         capacity: 2,
     },
-    firewallPolicyId: wafPolicy.id, // Attach WAF Policy
+    firewallPolicyId: wafPolicy.id,
     gatewayIpConfigurations: [{
         name: "appGwIPConfig",
         subnetId: subnet.id,
@@ -93,18 +93,13 @@ const appGateway = new azure.network.ApplicationGateway("appGateway", {
         httpListenerName: "httpListener",
         backendAddressPoolName: "appGwBackendPool",
         backendHttpSettingsName: "httpSettings",
-        priority: 100,
+        priority: 100, // Priority is mandatory
     }],
 });
 
-// Export Outputs
 export const appGatewayIp = publicIp.ipAddress;
 export const appGatewayId = appGateway.id;
 
-
-// Export Outputs
-export const appGatewayIp = publicIp.ipAddress;
-export const appGatewayId = appGateway.id;
 
 // import * as pulumi from "@pulumi/pulumi";
 // import * as azure from "@pulumi/azure-native";
