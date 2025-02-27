@@ -34,7 +34,7 @@ const publicIp = new azure.network.PublicIp("appGwPublicIP", {
 });
 
 // WAF Policy
-const wafPolicy = new azureNative.network.ApplicationGatewayWebApplicationFirewallPolicy("wafPolicy", {
+const wafPolicy = new azureNative.network.WebApplicationFirewallPolicy("wafPolicy", {
     resourceGroupName: resourceGroup.name,
     location: resourceGroup.location,
     policySettings: {
