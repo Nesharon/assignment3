@@ -1,5 +1,7 @@
 import * as pulumi from "@pulumi/pulumi";
 import * as azure from "@pulumi/azure";
+import * as azure from "@pulumi/azure-native";
+
 
 // Configuration
 const config = new pulumi.Config();
