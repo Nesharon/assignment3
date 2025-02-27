@@ -58,7 +58,7 @@ const appGateway = new azure.network.ApplicationGateway("appGateway", {
         tier: "WAF_v2",
         capacity: 2,
     },
-    firewallPolicyId: wafPolicy.id,
+    firewallPolicyId: wafPolicy.id.apply(id => id),
     gatewayIpConfigurations: [{
         name: "appGwIPConfig",
         subnetId: subnet.id,
