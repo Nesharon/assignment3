@@ -61,6 +61,7 @@ const appGateway = new azure.network.ApplicationGateway("appGateway", {
         port: 80,
         protocol: "Http",
         requestTimeout: 20,
+        cookieBasedAffinity: "Disabled", // Mandatory Property Added
     }],
     httpListeners: [{
         name: "httpListener",
