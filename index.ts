@@ -35,7 +35,26 @@ const publicIp = new azure.network.PublicIPAddress("appGwPublicIp", {
     publicIPAllocationMethod: "Dynamic",
 });
 
-// Application Gateway
+// Frontend Port
+const frontendPort = {
+    name: "appGwFrontendPort",
+    port: 80,
+};
+
+const backendAddressPool = {
+    name: "appGwBackendPool",
+    backendAddresses: [
+        { ipAddress: "10.0.2.4" }, // Replace with your backend IP
+    ],
+};
+
+const backendHttpSettings = {
+    name: "appGwBackendHttpSettings",
+    port: 80,
+    protocol: "Http",
+    requestTimeout: 20,
+};
+
 const appGateway = new azure.network.ApplicationGateway("appGateway", {
     resourceGroupName: resourceGroup.name,
     location: resourceGroup.location,
@@ -56,29 +75,16 @@ const appGateway = new azure.network.ApplicationGateway("appGateway", {
             id: publicIp.id,
         },
     }],
-    frontendPorts: [{
-        name: "appGwFrontendPort",
-        port: 80,
-    }],
-    backendAddressPools: [{
-        name: "appGwBackendPool",
-        backendAddresses: [
-            { ipAddress: "10.0.2.4" }, // Replace with your backend IP
-        ],
-    }],
-    backendHttpSettingsCollection: [{
-        name: "appGwBackendHttpSettings",
-        port: 80,
-        protocol: "Http",
-        requestTimeout: 20,
-    }],
+    frontendPorts: [frontendPort],
+    backendAddressPools: [backendAddressPool],
+    backendHttpSettingsCollection: [backendHttpSettings],
     httpListeners: [{
         name: "appGwHttpListener",
         frontendIPConfiguration: {
             id: pulumi.interpolate`${appGateway.id}/frontendIPConfigurations/appGwFrontendIPConfig`,
         },
         frontendPort: {
-            id: pulumi.interpolate`${appGateway.id}/frontendPorts/appGwFrontendPort`,
+            id: pulumi.interpolate`${appGateway.id}/frontendPorts/${frontendPort.name}`,
         },
         protocol: "Http",
     }],
@@ -89,17 +95,16 @@ const appGateway = new azure.network.ApplicationGateway("appGateway", {
             id: pulumi.interpolate`${appGateway.id}/httpListeners/appGwHttpListener`,
         },
         backendAddressPool: {
-            id: pulumi.interpolate`${appGateway.id}/backendAddressPools/appGwBackendPool`,
+            id: pulumi.interpolate`${appGateway.id}/backendAddressPools/${backendAddressPool.name}`,
         },
         backendHttpSettings: {
-            id: pulumi.interpolate`${appGateway.id}/backendHttpSettingsCollection/appGwBackendHttpSettings`,
+            id: pulumi.interpolate`${appGateway.id}/backendHttpSettingsCollection/${backendHttpSettings.name}`,
         },
     }],
 });
 
 export const appGatewayId = appGateway.id;
 export const publicIpAddress = publicIp.ipAddress;
-
 
 
 
