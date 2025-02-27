@@ -2,6 +2,7 @@ import * as pulumi from "@pulumi/pulumi";
 import * as azure from "@pulumi/azure";
 import * as azureNative from "@pulumi/azure-native";
 
+
 // Configuration
 const config = new pulumi.Config();
 const location = config.get("location") || "uaenorth";
@@ -33,53 +34,8 @@ const publicIp = new azure.network.PublicIp("appGwPublicIP", {
 });
 
 // Application Gateway
-const appGateway = new azure.network.ApplicationGateway("appGateway", {
-    resourceGroupName: resourceGroup.name,
-    location: resourceGroup.location,
-    sku: {
-        name: "Standard_v2",
-        tier: "Standard_v2",
-        capacity: 2,
-    },
-    gatewayIpConfigurations: [{ // Fixed property name
-        name: "appGwIPConfig",
-        subnetId: subnet.id,
-    }],
-    frontendIpConfigurations: [{
-        name: "appGwFrontendIPConfig",
-        publicIpAddressId: publicIp.id,
-    }],
-    frontendPorts: [{
-        name: "httpPort",
-        port: 80,
-    }],
-    backendAddressPools: [{
-        name: "appGwBackendPool",
-    }],
-    backendHttpSettingsCollection: [{
-        name: "httpSettings",
-        port: 80,
-        protocol: "Http",
-        requestTimeout: 20,
-    }],
-    httpListeners: [{
-        name: "httpListener",
-        frontendIpConfigurationName: "appGwFrontendIPConfig",
-        frontendPortName: "httpPort",
-        protocol: "Http",
-    }],
-    requestRoutingRules: [{
-        name: "rule1",
-        ruleType: "Basic",
-        httpListenerName: "httpListener",
-        backendAddressPoolName: "appGwBackendPool",
-        backendHttpSettingsName: "httpSettings",
-    }],
-});
+const appGateway = new azure.network.ApplicationGateway("appG
 
-// Export Outputs
-export const appGatewayIp = publicIp.ipAddress;
-export const appGatewayId = appGateway.id;
 
 
 // import * as pulumi from "@pulumi/pulumi";
