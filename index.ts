@@ -2,7 +2,6 @@ import * as pulumi from "@pulumi/pulumi";
 import * as azure from "@pulumi/azure";
 import * as azureNative from "@pulumi/azure-native";
 
-
 // Configuration
 const config = new pulumi.Config();
 const location = config.get("location") || "uaenorth";
@@ -42,11 +41,11 @@ const appGateway = new azure.network.ApplicationGateway("appGateway", {
         tier: "Standard_v2",
         capacity: 2,
     },
-    gatewayIPConfigurations: [{
+    gatewayIpConfigurations: [{ // Fixed property name
         name: "appGwIPConfig",
         subnetId: subnet.id,
     }],
-    frontendIPConfigurations: [{
+    frontendIpConfigurations: [{
         name: "appGwFrontendIPConfig",
         publicIpAddressId: publicIp.id,
     }],
@@ -81,7 +80,6 @@ const appGateway = new azure.network.ApplicationGateway("appGateway", {
 // Export Outputs
 export const appGatewayIp = publicIp.ipAddress;
 export const appGatewayId = appGateway.id;
-
 
 
 // import * as pulumi from "@pulumi/pulumi";
